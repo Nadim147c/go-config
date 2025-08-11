@@ -1,0 +1,8 @@
+app:
+  port: 9000 # Should be overridden by main config
+  env: "production"
+database:
+  host: "db.example.com"
+  port: "5432"
+
+include: "includedbyyaml.toml"

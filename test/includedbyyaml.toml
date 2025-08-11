@@ -1,0 +1,5 @@
+[app]
+debug = true
+
+[logging]
+level = "info"

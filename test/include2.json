@@ -1,0 +1,9 @@
+{
+  "logging": {
+    "format": "json",
+    "level": "debug"
+  },
+  "feature_flags": {
+    "new_ui": true
+  }
+}
