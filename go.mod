@@ -8,4 +8,7 @@ require (
 	github.com/goccy/go-yaml v1.18.0
 )
 
-require golang.org/x/sys v0.26.0 // indirect
+require (
+	github.com/spf13/cast v1.9.2 // indirect
+	golang.org/x/sys v0.26.0 // indirect
+)

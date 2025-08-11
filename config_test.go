@@ -9,7 +9,7 @@ import (
 )
 
 func Json(v any) string {
-	return string(should(json.MarshalIndent(v, "", "   ")))
+	return string(must(json.MarshalIndent(v, "", "   ")))
 }
 
 func TestReadConfigWithIncludes(t *testing.T) {
@@ -28,7 +28,7 @@ func TestReadConfigWithIncludes(t *testing.T) {
 			"name":  "MyApp",
 			"port":  "8080",
 			"env":   "production",
-			"debug": true,
+			"debug": "true",
 		},
 		"database": map[string]any{
 			"host": "db.example.com",
@@ -44,14 +44,24 @@ func TestReadConfigWithIncludes(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(c.config, expected) {
-		t.Errorf("Config does not match expected structure:\nGot: %s\nWant: %s",
+		t.Fatalf("Config does not match expected structure:\nGot: %s\nWant: %s",
 			Json(c.config),
 			Json(expected))
 	}
 
 	// Verify no include keys remain
 	if containsIncludeKey(c.config) {
-		t.Error("Final config should not contain any 'include' keys")
+		t.Fatal("Final config should not contain any 'include' keys")
+	}
+
+	dbPort, ok := c.GetInt("database.port")
+	if !ok || dbPort != 5432 {
+		t.Fatalf("c.GetInt(\"database.port\") = %d, want = %d", dbPort, 5432)
+	}
+
+	debug, ok := c.GetBool("app.debug")
+	if !debug || !ok {
+		t.Fatalf("c.GetBool(\"app.debug\") = %v, want = %v", debug, true)
 	}
 }
 

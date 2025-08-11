@@ -1,5 +1,5 @@
 [app]
-debug = true
+debug = "true"
 
 [logging]
 level = "info"
