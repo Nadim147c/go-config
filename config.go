@@ -7,20 +7,13 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/goccy/go-yaml"
 	"github.com/spf13/cast"
 )
-
-// must indicates that there must not be any error; it panics if an error occurs.
-func must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
 
 type (
 	DecodeFunc func([]byte) (map[string]any, error)
@@ -49,18 +42,26 @@ func EncoderFromMarshal(marshall MarshalFunc) EncodeFunc {
 var cfg = New()
 
 type Config struct {
-	config        map[string]any
-	envPrefix     string
-	paths         []string
-	logger        *slog.Logger
+	config    map[string]any
+	envPrefix string
+	logger    *slog.Logger
+
+	// paths is slice all paths to look for config
+	paths []string
+	// fullPath indicates if the config path is fullPath or directory
+	fullPath      map[string]bool
 	defaultFormat string
-	decoders      map[string]DecodeFunc
-	encoders      map[string]EncodeFunc
+	fileName      string
+
+	decoders map[string]DecodeFunc
+	encoders map[string]EncodeFunc
 }
 
 func New() *Config {
 	return &Config{
-		config: make(map[string]any),
+		logger:   slog.Default(),
+		config:   make(map[string]any),
+		fullPath: make(map[string]bool),
 		encoders: map[string]EncodeFunc{
 			"json": EncoderFromMarshal(json.Marshal),
 			"yaml": EncoderFromMarshal(yaml.Marshal),
@@ -80,9 +81,115 @@ func (c *Config) SetEnvPrefix(p string) {
 	c.envPrefix = strings.ReplaceAll(p, "_", "")
 }
 
+// basenameWithoutExt return filename without extension
+func basenameWithoutExt(path string) string {
+	base := filepath.Base(path)
+	ext := filepath.Ext(base)
+	return base[:len(base)-len(ext)]
+}
+
+// GetConfigFiles resolves and returns all configuration files that should be read by ReadConfig.
+// It processes all registered paths (added via AddPath/AddFile) and returns a consolidated list
+// of valid configuration files according to these rules:
+//
+// 1. For paths marked as "full" (added via AddFile):
+//   - Verifies the exact file path exists
+//   - Includes it directly if found
+//
+// 2. For regular directory paths (added via AddPath):
+//   - Scans the directory for files matching the Config's filename (without extension)
+//   - Skips subdirectories and non-matching files
+//   - Includes matching files with their full paths
+//
+// The method handles path resolution (using FindPath) and silently skips invalid paths,
+// logging debug information for troubleshooting. The returned paths are ordered according
+// to the original registration order of their parent directories.
+//
+// Example: For fileName "config" and path "/etc/app", it would match:
+//
+//	"/etc/app/config.json", "/etc/app/config.yaml", etc.
+//
+// Returns: A slice of absolute file paths ready for configuration loading
+func (c *Config) GetConfigFiles() []string {
+	paths := make([]string, 0)
+
+	for path := range slices.Values(c.paths) {
+		full := c.fullPath[path]
+		path, err := FindPath("", path)
+		if err != nil {
+			continue
+		}
+
+		if full {
+			if _, err := os.Stat(path); err == nil {
+				paths = append(paths, path)
+			}
+			continue
+		}
+
+		dir, err := os.ReadDir(path)
+		if err != nil {
+			c.logger.Debug("Failed to read directory", "path", path, "error", err)
+			continue
+		}
+		for entry := range slices.Values(dir) {
+			name := entry.Name()
+			if entry.IsDir() {
+				c.logger.Debug("Skip directory", "path", path)
+				continue
+			}
+			if basenameWithoutExt(name) == c.fileName {
+				paths = append(paths, filepath.Join(path, name))
+			}
+		}
+	}
+
+	return paths
+}
+
+// SetFormat sets the default configuration format to be used when there isn't
+// any encoder or decoder available for a specific format. The format string
+// should specify the configuration format (e.g., "json", "yaml", "toml").
+// This is a global convenience function that delegates to the default config instance.
+func SetFormat(f string) { cfg.SetFormat(f) }
+
+// SetFormat sets the default configuration format for this Config instance.
+// The format will be used when no specific encoder/decoder is available for
+// a requested format. Typical formats include "json", "yaml", "toml", etc.
+func (c *Config) SetFormat(f string) {
+	c.defaultFormat = f
+}
+
+// AddPath adds a file path to the list of paths that will be searched for
+// configuration files. This is a global convenience function that delegates
+// to the default config instance.
+func AddPath(p string) { cfg.AddPath(p) }
+
+// AddPath adds a file path to the Config instance's list of search paths.
+// These paths will be used when looking for configuration files to load.
+// Duplicate paths may be added.
+func (c *Config) AddPath(p string) {
+	c.paths = append(c.paths, p)
+}
+
+// AddFile adds a specific file path to be loaded as a configuration file.
+// This is a global convenience function that delegates to the default config instance.
+// The file will be marked for loading and added to the search paths.
+func AddFile(p string) { cfg.AddFile(p) }
+
+// AddFile adds a specific file path to the Config instance, marking it to be
+// loaded as a configuration file. The file is added to both the fullPath map
+// (to track specific files) and the general paths list (for search purposes).
+// This allows for both explicit file loading and path-based searching.
+func (c *Config) AddFile(p string) {
+	c.fullPath[p] = true
+	c.paths = append(c.paths, p)
+}
+
 func (c *Config) ReadConfig() {
 	config := map[string]any{}
-	for _, path := range c.paths {
+	paths := c.GetConfigFiles()
+	for path := range slices.Values(paths) {
 		visited := make(map[string]bool)
 		m, err := c.readConfigFile(path, visited)
 		if err != nil {
@@ -226,9 +333,6 @@ func (c *Config) Keys() []string {
 
 // Settings returns the settings map
 func (c *Config) Settings() map[string]any {
-	if c.config == nil {
-		return make(map[string]any)
-	}
 	return c.config
 }
 

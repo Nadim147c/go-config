@@ -40,7 +40,7 @@ func FindPath(base, input string) (string, error) {
 	split := separator.Split(input, 2)
 	if len(split) != 2 {
 		joined := filepath.Join(base, input)
-		return filepath.Clean(joined), nil
+		return filepath.Abs(joined)
 	}
 
 	parent, rest := split[0], split[1]
@@ -85,6 +85,8 @@ func FindPath(base, input string) (string, error) {
 	default:
 		path = filepath.Join(base, input)
 	}
+
+	path = os.ExpandEnv(path)
 
 	return filepath.Clean(path), nil
 }

@@ -1,10 +1,12 @@
-package config
+package config_test
 
 import (
 	"os"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/Nadim147c/go-config"
 )
 
 func TestFindPath(t *testing.T) {
@@ -43,7 +45,7 @@ func TestFindPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FindPath(tt.base, tt.input)
+			got, err := config.FindPath(tt.base, tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("FindPath() error = %v, wantErr %v", err, tt.wantErr)
 			}

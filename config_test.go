@@ -1,23 +1,31 @@
-package config
+package config_test
 
 import (
 	"encoding/json"
 	"log/slog"
-	"os"
 	"reflect"
 	"testing"
+
+	"github.com/Nadim147c/go-config"
 )
+
+// must indicates that there must not be any error; it panics if an error occurs.
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
 
 func Json(v any) string {
 	return string(must(json.MarshalIndent(v, "", "   ")))
 }
 
 func TestReadConfigWithIncludes(t *testing.T) {
-	// Setup
-	c := New()
-	c.paths = []string{"./test/config.json"}
-	c.logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
-	c.defaultFormat = "json"
+	slog.SetLogLoggerLevel(slog.LevelDebug)
+	c := config.New()
+	c.AddFile("./test/config.json")
+	c.SetFormat("json")
 
 	// Execute
 	c.ReadConfig()
@@ -43,14 +51,14 @@ func TestReadConfigWithIncludes(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(c.config, expected) {
+	if !reflect.DeepEqual(c.Settings(), expected) {
 		t.Fatalf("Config does not match expected structure:\nGot: %s\nWant: %s",
-			Json(c.config),
+			Json(c.Settings()),
 			Json(expected))
 	}
 
 	// Verify no include keys remain
-	if containsIncludeKey(c.config) {
+	if containsIncludeKey(c.Settings()) {
 		t.Fatal("Final config should not contain any 'include' keys")
 	}
 
