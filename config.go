@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -59,6 +60,7 @@ type Config struct {
 
 func New() *Config {
 	return &Config{
+		config: make(map[string]any),
 		encoders: map[string]EncodeFunc{
 			"json": EncoderFromMarshal(json.Marshal),
 			"yaml": EncoderFromMarshal(yaml.Marshal),
@@ -175,6 +177,14 @@ func (c *Config) parse(path string) (m map[string]any, err error) {
 }
 
 func (c *Config) Set(key string, v any) error {
+	if key == "." {
+		m, ok := v.(map[string]any)
+		if !ok {
+			return errors.New("global config must be a map[string]any")
+		}
+		c.config = m
+	}
+
 	nested, err := KeySplit(key)
 	if err != nil {
 		return err
@@ -202,11 +212,34 @@ func (c *Config) Set(key string, v any) error {
 	return nil
 }
 
+// Keps returns top-level keys of config
+func (c *Config) Keys() []string {
+	if c.config == nil {
+		return make([]string, 0)
+	}
+	keys := make([]string, 0, len(c.config))
+	for k := range c.config {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// Settings returns the settings map
+func (c *Config) Settings() map[string]any {
+	if c.config == nil {
+		return make(map[string]any)
+	}
+	return c.config
+}
+
 // Get returns the value for the key, or error if missing/invalid.
 func GetE(key string) (any, error) { return cfg.GetE(key) }
 
 // GetE returns the value for the key, or an error if missing/invalid.
 func (c *Config) GetE(key string) (any, error) {
+	if key == "." {
+		return c.config, nil
+	}
 	nested, err := KeySplit(key)
 	if err != nil {
 		return nil, err
