@@ -174,9 +174,11 @@ func (c *Config) parse(path string) (m map[string]any, err error) {
 	return m, nil
 }
 
-func (c *Config) Set(key string, v any) {
-	key = strings.ToLower(key)
-	nested := strings.Split(key, ".")
+func (c *Config) Set(key string, v any) error {
+	nested, err := KeySplit(key)
+	if err != nil {
+		return err
+	}
 
 	m := c.config
 	for i := 0; i < len(nested)-1; i++ {
@@ -197,6 +199,7 @@ func (c *Config) Set(key string, v any) {
 		}
 	}
 	m[nested[len(nested)-1]] = v
+	return nil
 }
 
 // Get returns the value for the key, or error if missing/invalid.
@@ -204,21 +207,30 @@ func GetE(key string) (any, error) { return cfg.GetE(key) }
 
 // GetE returns the value for the key, or an error if missing/invalid.
 func (c *Config) GetE(key string) (any, error) {
-	key = strings.ToLower(key)
-	nested := strings.Split(key, ".")
+	nested, err := KeySplit(key)
+	if err != nil {
+		return nil, err
+	}
+
+	var prefix strings.Builder
 
 	m := c.config
 	for i := 0; i < len(nested)-1; i++ {
 		part := nested[i]
+		prefix.WriteString(part)
+
 		next, ok := m[part]
 		if !ok {
-			return nil, fmt.Errorf("key not found: %s", part)
+			return nil, fmt.Errorf("key not found: %s", prefix.String())
 		}
+
 		subMap, ok := next.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("invalid type for key: %s (expected map)", part)
+			return nil, fmt.Errorf("invalid type for key: %s (expected map)", prefix.String())
 		}
 		m = subMap
+
+		prefix.WriteByte('.')
 	}
 
 	val, ok := m[nested[len(nested)-1]]
