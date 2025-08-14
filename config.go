@@ -199,39 +199,42 @@ func (c *Config) Set(key string, v any) {
 	m[nested[len(nested)-1]] = v
 }
 
-// Get returns the value for the key, or false if missing/invalid.
-func Get(key string) (any, bool) { return cfg.Get(key) }
+// Get returns the value for the key, or error if missing/invalid.
+func GetE(key string) (any, error) { return cfg.GetE(key) }
 
-// Get returns the value for the key, or false if missing/invalid.
-func (c *Config) Get(key string) (any, bool) {
+// GetE returns the value for the key, or an error if missing/invalid.
+func (c *Config) GetE(key string) (any, error) {
 	key = strings.ToLower(key)
 	nested := strings.Split(key, ".")
 
 	m := c.config
 	for i := 0; i < len(nested)-1; i++ {
 		part := nested[i]
-		if next, ok := m[part]; ok {
-			if subMap, ok := next.(map[string]any); ok {
-				m = subMap
-			} else {
-				// Found a non-map value before the end of the path
-				return nil, false
-			}
-		} else {
-			return nil, false
+		next, ok := m[part]
+		if !ok {
+			return nil, fmt.Errorf("key not found: %s", part)
 		}
+		subMap, ok := next.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("invalid type for key: %s (expected map)", part)
+		}
+		m = subMap
 	}
 
 	val, ok := m[nested[len(nested)-1]]
-	return val, ok
+	if !ok {
+		return nil, fmt.Errorf("key not found: %s", key)
+	}
+
+	return val, nil
 }
 
 // GetInt returns the int value for the key, or false if missing/invalid.
-func GetInt(key string) (int, bool) { return cfg.GetInt(key) }
+func GetIntE(key string) (int, error) { return cfg.GetIntE(key) }
 
 // GetInt returns the int value for the key, or false if missing/invalid.
-func (c *Config) GetInt(key string) (int, bool) {
-	return getValue(c, key, cast.ToIntE)
+func (c *Config) GetIntE(key string) (int, error) {
+	return getValueE(c, key, cast.ToIntE)
 }
 
 // GetInt returns the int value for the key. Panics if missing/invalid.
@@ -243,19 +246,19 @@ func (c *Config) GetIntMust(key string) int {
 }
 
 // GetInt returns the int value for the key. Returns default if missing/invalid.
-func GetIntSafe(key string) int { return cfg.GetIntSafe(key) }
+func GetInt(key string) int { return cfg.GetInt(key) }
 
 // GetInt returns the int value for the key. Returns default if missing/invalid.
-func (c *Config) GetIntSafe(key string) int {
-	return getValueSafe(c, key, cast.ToIntE)
+func (c *Config) GetInt(key string) int {
+	return getValue(c, key, cast.ToIntE)
 }
 
 // GetInt64 returns the int64 value for the key, or false if missing/invalid.
-func GetInt64(key string) (int64, bool) { return cfg.GetInt64(key) }
+func GetInt64E(key string) (int64, error) { return cfg.GetInt64E(key) }
 
 // GetInt64 returns the int64 value for the key, or false if missing/invalid.
-func (c *Config) GetInt64(key string) (int64, bool) {
-	return getValue(c, key, cast.ToInt64E)
+func (c *Config) GetInt64E(key string) (int64, error) {
+	return getValueE(c, key, cast.ToInt64E)
 }
 
 // GetInt64Must returns the int64 value for the key. Panics if missing/invalid.
@@ -266,20 +269,20 @@ func (c *Config) GetInt64Must(key string) int64 {
 	return getValueMust(c, key, cast.ToInt64E)
 }
 
-// GetInt64Safe returns the int64 value for the key. Returns default if missing/invalid.
-func GetInt64Safe(key string) int64 { return cfg.GetInt64Safe(key) }
+// GetInt64 returns the int64 value for the key. Returns default if missing/invalid.
+func GetInt64(key string) int64 { return cfg.GetInt64(key) }
 
-// GetInt64Safe returns the int64 value for the key. Returns default if missing/invalid.
-func (c *Config) GetInt64Safe(key string) int64 {
-	return getValueSafe(c, key, cast.ToInt64E)
+// GetInt64 returns the int64 value for the key. Returns default if missing/invalid.
+func (c *Config) GetInt64(key string) int64 {
+	return getValue(c, key, cast.ToInt64E)
 }
 
 // GetUint returns the uint value for the key, or false if missing/invalid.
-func GetUint(key string) (uint, bool) { return cfg.GetUint(key) }
+func GetUintE(key string) (uint, error) { return cfg.GetUintE(key) }
 
 // GetUint returns the uint value for the key, or false if missing/invalid.
-func (c *Config) GetUint(key string) (uint, bool) {
-	return getValue(c, key, cast.ToUintE)
+func (c *Config) GetUintE(key string) (uint, error) {
+	return getValueE(c, key, cast.ToUintE)
 }
 
 // GetUintMust returns the uint value for the key. Panics if missing/invalid.
@@ -290,20 +293,20 @@ func (c *Config) GetUintMust(key string) uint {
 	return getValueMust(c, key, cast.ToUintE)
 }
 
-// GetUintSafe returns the uint value for the key. Returns default if missing/invalid.
-func GetUintSafe(key string) uint { return cfg.GetUintSafe(key) }
+// GetUint returns the uint value for the key. Returns default if missing/invalid.
+func GetUint(key string) uint { return cfg.GetUint(key) }
 
-// GetUintSafe returns the uint value for the key. Returns default if missing/invalid.
-func (c *Config) GetUintSafe(key string) uint {
-	return getValueSafe(c, key, cast.ToUintE)
+// GetUint returns the uint value for the key. Returns default if missing/invalid.
+func (c *Config) GetUint(key string) uint {
+	return getValue(c, key, cast.ToUintE)
 }
 
 // GetUint64 returns the uint64 value for the key, or false if missing/invalid.
-func GetUint64(key string) (uint64, bool) { return cfg.GetUint64(key) }
+func GetUint64E(key string) (uint64, error) { return cfg.GetUint64E(key) }
 
 // GetUint64 returns the uint64 value for the key, or false if missing/invalid.
-func (c *Config) GetUint64(key string) (uint64, bool) {
-	return getValue(c, key, cast.ToUint64E)
+func (c *Config) GetUint64E(key string) (uint64, error) {
+	return getValueE(c, key, cast.ToUint64E)
 }
 
 // GetUint64Must returns the uint64 value for the key. Panics if missing/invalid.
@@ -314,20 +317,20 @@ func (c *Config) GetUint64Must(key string) uint64 {
 	return getValueMust(c, key, cast.ToUint64E)
 }
 
-// GetUint64Safe returns the uint64 value for the key. Returns default if missing/invalid.
-func GetUint64Safe(key string) uint64 { return cfg.GetUint64Safe(key) }
+// GetUint64 returns the uint64 value for the key. Returns default if missing/invalid.
+func GetUint64(key string) uint64 { return cfg.GetUint64(key) }
 
-// GetUint64Safe returns the uint64 value for the key. Returns default if missing/invalid.
-func (c *Config) GetUint64Safe(key string) uint64 {
-	return getValueSafe(c, key, cast.ToUint64E)
+// GetUint64 returns the uint64 value for the key. Returns default if missing/invalid.
+func (c *Config) GetUint64(key string) uint64 {
+	return getValue(c, key, cast.ToUint64E)
 }
 
 // GetString returns the string value for the key, or false if missing/invalid.
-func GetString(key string) (string, bool) { return cfg.GetString(key) }
+func GetStringE(key string) (string, error) { return cfg.GetStringE(key) }
 
 // GetString returns the string value for the key, or false if missing/invalid.
-func (c *Config) GetString(key string) (string, bool) {
-	return getValue(c, key, cast.ToStringE)
+func (c *Config) GetStringE(key string) (string, error) {
+	return getValueE(c, key, cast.ToStringE)
 }
 
 // GetStringMust returns the string value for the key. Panics if missing/invalid.
@@ -338,20 +341,20 @@ func (c *Config) GetStringMust(key string) string {
 	return getValueMust(c, key, cast.ToStringE)
 }
 
-// GetStringSafe returns the string value for the key. Returns default if missing/invalid.
-func GetStringSafe(key string) string { return cfg.GetStringSafe(key) }
+// GetString returns the string value for the key. Returns default if missing/invalid.
+func GetString(key string) string { return cfg.GetString(key) }
 
-// GetStringSafe returns the string value for the key. Returns default if missing/invalid.
-func (c *Config) GetStringSafe(key string) string {
-	return getValueSafe(c, key, cast.ToStringE)
+// GetString returns the string value for the key. Returns default if missing/invalid.
+func (c *Config) GetString(key string) string {
+	return getValue(c, key, cast.ToStringE)
 }
 
 // GetBool returns the bool value for the key, or false if missing/invalid.
-func GetBool(key string) (bool, bool) { return cfg.GetBool(key) }
+func GetBoolE(key string) (bool, error) { return cfg.GetBoolE(key) }
 
 // GetBool returns the bool value for the key, or false if missing/invalid.
-func (c *Config) GetBool(key string) (bool, bool) {
-	return getValue(c, key, cast.ToBoolE)
+func (c *Config) GetBoolE(key string) (bool, error) {
+	return getValueE(c, key, cast.ToBoolE)
 }
 
 // GetBoolMust returns the bool value for the key. Panics if missing/invalid.
@@ -362,33 +365,33 @@ func (c *Config) GetBoolMust(key string) bool {
 	return getValueMust(c, key, cast.ToBoolE)
 }
 
-// GetBoolSafe returns the bool value for the key. Returns default if missing/invalid.
-func GetBoolSafe(key string) bool { return cfg.GetBoolSafe(key) }
+// GetBool returns the bool value for the key. Returns default if missing/invalid.
+func GetBool(key string) bool { return cfg.GetBool(key) }
 
-// GetBoolSafe returns the bool value for the key. Returns default if missing/invalid.
-func (c *Config) GetBoolSafe(key string) bool {
-	return getValueSafe(c, key, cast.ToBoolE)
+// GetBool returns the bool value for the key. Returns default if missing/invalid.
+func (c *Config) GetBool(key string) bool {
+	return getValue(c, key, cast.ToBoolE)
 }
 
 // Generic helper for type-safe get with casting
-func getValue[T any](c *Config, key string, conv func(any) (T, error)) (T, bool) {
+func getValueE[T any](c *Config, key string, conv func(any) (T, error)) (T, error) {
 	var zero T
-	v, ok := c.Get(key)
-	if !ok {
-		return zero, false
+	v, err := c.GetE(key)
+	if err != nil {
+		return zero, err
 	}
 	t, err := conv(v)
 	if err != nil {
-		return zero, false
+		return zero, err
 	}
-	return t, true
+	return t, nil
 }
 
 // Generic helper for type-safe get with casting
-func getValueSafe[T any](c *Config, key string, conv func(any) (T, error)) T {
+func getValue[T any](c *Config, key string, conv func(any) (T, error)) T {
 	var zero T
-	v, ok := c.Get(key)
-	if !ok {
+	v, err := c.GetE(key)
+	if err != nil {
 		return zero
 	}
 	t, err := conv(v)
@@ -400,13 +403,13 @@ func getValueSafe[T any](c *Config, key string, conv func(any) (T, error)) T {
 
 // Generic helper for type-safe get with casting
 func getValueMust[T any](c *Config, key string, conv func(any) (T, error)) T {
-	v, ok := c.Get(key)
-	if !ok {
-		panic(fmt.Sprintf("failed to get value for key: %s", key))
+	v, err := c.GetE(key)
+	if err != nil {
+		panic(err)
 	}
 	t, err := conv(v)
 	if err != nil {
-		panic(fmt.Sprintf("failed to get value for key: %s, error: %s", key, err))
+		panic(err)
 	}
 	return t
 }

@@ -54,13 +54,13 @@ func TestReadConfigWithIncludes(t *testing.T) {
 		t.Fatal("Final config should not contain any 'include' keys")
 	}
 
-	dbPort, ok := c.GetInt("database.port")
-	if !ok || dbPort != 5432 {
+	dbPort := c.GetIntMust("database.port")
+	if dbPort != 5432 {
 		t.Fatalf("c.GetInt(\"database.port\") = %d, want = %d", dbPort, 5432)
 	}
 
-	debug, ok := c.GetBool("app.debug")
-	if !debug || !ok {
+	debug := c.GetBoolMust("app.debug")
+	if !debug {
 		t.Fatalf("c.GetBool(\"app.debug\") = %v, want = %v", debug, true)
 	}
 }
