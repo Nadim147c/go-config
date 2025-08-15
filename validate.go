@@ -204,6 +204,12 @@ func Validate(sf reflect.StructField, sfv reflect.Value, changed bool) error {
 				if value < limit {
 					return fmt.Errorf("%d is less the minimum (%d)", value, limit)
 				}
+			case reflect.Float32, reflect.Float64:
+				limit := Must(cast.ToFloat64E(rule))
+				value := value.Float()
+				if value < limit {
+					return fmt.Errorf("%f is less the minimum (%f)", value, limit)
+				}
 			default:
 				panic(fmt.Sprintf("%s does not support min value", kind))
 			}
@@ -227,6 +233,12 @@ func Validate(sf reflect.StructField, sfv reflect.Value, changed bool) error {
 				value := value.Uint()
 				if value > limit {
 					return fmt.Errorf("%d is less the maximum (%d)", value, limit)
+				}
+			case reflect.Float32, reflect.Float64:
+				limit := Must(cast.ToFloat64E(rule))
+				value := value.Float()
+				if value > limit {
+					return fmt.Errorf("%f is less the maximum (%f)", value, limit)
 				}
 			default:
 				panic(fmt.Sprintf("%s does not support min value", kind))
