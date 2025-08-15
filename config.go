@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -14,6 +15,14 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/spf13/cast"
 )
+
+// Must indicates that there Must not be any error; it panics if an error occurs.
+func Must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
 
 type (
 	DecodeFunc func([]byte) (map[string]any, error)
@@ -376,6 +385,30 @@ func (c *Config) GetE(key string) (any, error) {
 	}
 
 	return val, nil
+}
+
+// GetValueE returns the reflect.Value for the key, or error if missing/invalid.
+func GetValueE(key string) (reflect.Value, error) { return cfg.GetValueE(key) }
+
+// GetValueE returns the reflect.Value for the key, or error if missing/invalid.
+func (c *Config) GetValueE(key string) (reflect.Value, error) {
+	v, err := c.GetE(key)
+	if err != nil {
+		return reflect.Value{}, err
+	}
+	return reflect.ValueOf(v), nil
+}
+
+// GetValueE returns the reflect.Value for the key. Returns default value if missing/invalid.
+func GetValue(key string) reflect.Value { return cfg.GetValue(key) }
+
+// GetValueE returns the reflect.Value for the key. Returns default value if missing/invalid.
+func (c *Config) GetValue(key string) reflect.Value {
+	v, err := c.GetE(key)
+	if err != nil {
+		return reflect.Value{}
+	}
+	return reflect.ValueOf(v)
 }
 
 // GetInt returns the int value for the key, or false if missing/invalid.

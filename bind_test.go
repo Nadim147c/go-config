@@ -10,7 +10,7 @@ func TestBind(t *testing.T) {
 	type testStruct struct {
 		Port     int      `config:"app.port" validate:"default=8080,min=1000,max=9000"`
 		Email    string   `config:"email" validate:"required,email"`
-		Username string   `config:"username" validate:"required,regex='^[A-Za-z0-9_]+$'"`
+		Username string   `config:"username" validate:"required,match='^[A-Za-z0-9_]+$'"`
 		Settings Settings `config:"settings"`
 	}
 
