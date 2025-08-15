@@ -4,13 +4,13 @@ import "testing"
 
 func TestBind(t *testing.T) {
 	type Settings struct {
-		ID string `config:"id" validate:"required,uuid"`
+		ID string `config:"id" check:"required,uuid"`
 	}
 
 	type testStruct struct {
-		Port     int      `config:"app.port" validate:"default=8080,min=1000,max=9000"`
-		Email    string   `config:"email" validate:"required,email"`
-		Username string   `config:"username" validate:"required,match='^[A-Za-z0-9_]+$'"`
+		Port     int      `config:"app.port" check:"default=8080,min=1000,max=9000"`
+		Email    string   `config:"email" check:"required,email"`
+		Username string   `config:"username" check:"required,match='^[A-Za-z0-9_]+$'"`
 		Settings Settings `config:"settings"`
 	}
 
@@ -42,8 +42,8 @@ func TestBind(t *testing.T) {
 
 func TestBindDefaultsAndValidationFail(t *testing.T) {
 	type testStruct struct {
-		Port  int    `config:"app.port" validate:"default=8080,min=1000,max=9000"`
-		Email string `config:"email" validate:"required,email"`
+		Port  int    `config:"app.port" check:"default=8080,min=1000,max=9000"`
+		Email string `config:"email" check:"required,email"`
 	}
 
 	c := New()

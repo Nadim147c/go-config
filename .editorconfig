@@ -1,0 +1,24 @@
+# EditorConfig is a file format that helps maintain consistent coding styles
+# across different editors and IDEs
+# https://editorconfig.org/
+
+# top-most EditorConfig file
+root = true
+
+# Default settings for all files
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 80
+
+# Go specific settings
+[*.go]
+max_line_length = 80
+
+# Markdown specific settings
+[*.md]
+max_line_length = 100

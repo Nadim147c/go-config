@@ -16,7 +16,8 @@ import (
 	"github.com/spf13/cast"
 )
 
-// Must indicates that there Must not be any error; it panics if an error occurs.
+// Must indicates that there Must not be any error; it panics if an error
+// occurs.
 func Must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)
@@ -24,16 +25,24 @@ func Must[T any](v T, err error) T {
 	return v
 }
 
-type (
-	DecodeFunc func([]byte) (map[string]any, error)
-	EncodeFunc func(map[string]any) ([]byte, error)
-)
+// DecodeFunc decodes raw bytes into a generic map representation of a config
+// file.
+type DecodeFunc func([]byte) (map[string]any, error)
 
-type (
-	UnmarshalFunc func([]byte, any) error
-	MarshalFunc   func(any) ([]byte, error)
-)
+// EncodeFunc encodes a generic config map into raw bytes for storage or
+// transmission.
+type EncodeFunc func(map[string]any) ([]byte, error)
 
+// UnmarshalFunc decodes raw bytes into a provided Go value
+// (like json.Unmarshal).
+type UnmarshalFunc func([]byte, any) error
+
+// MarshalFunc encodes a Go value into raw bytes (like json.Marshal).
+type MarshalFunc func(any) ([]byte, error)
+
+// DecoderFromUnmarshal wraps a standard UnmarshalFunc (e.g., YAML, JSON) into
+// a DecodeFunc that produces a map[string]any suitable for generic config
+// handling.
 func DecoderFromUnmarshal(unmarshall UnmarshalFunc) DecodeFunc {
 	return func(b []byte) (map[string]any, error) {
 		v := map[string]any{}
@@ -42,6 +51,8 @@ func DecoderFromUnmarshal(unmarshall UnmarshalFunc) DecodeFunc {
 	}
 }
 
+// EncoderFromMarshal wraps a standard MarshalFunc into an EncodeFunc that
+// serializes a map[string]any into raw bytes.
 func EncoderFromMarshal(marshall MarshalFunc) EncodeFunc {
 	return func(m map[string]any) ([]byte, error) {
 		return marshall(m)
@@ -50,14 +61,16 @@ func EncoderFromMarshal(marshall MarshalFunc) EncodeFunc {
 
 var cfg = New()
 
+// Config represents an application configuration container. It holds
+// configuration values loaded from files, environment variables, or other
+// sources. The struct also manages metadata and encoding/decoding behavior for
+// configuration data.
 type Config struct {
 	config    map[string]any
 	envPrefix string
 	logger    *slog.Logger
 
-	// paths is slice all paths to look for config
-	paths []string
-	// fullPath indicates if the config path is fullPath or directory
+	paths         []string
 	fullPath      map[string]bool
 	defaultFormat string
 	fileName      string
@@ -66,11 +79,12 @@ type Config struct {
 	encoders map[string]EncodeFunc
 }
 
+// New creates Config instance.
 func New() *Config {
 	return &Config{
 		logger:   slog.Default(),
-		config:   make(map[string]any),
-		fullPath: make(map[string]bool),
+		config:   map[string]any{},
+		fullPath: map[string]bool{},
 		encoders: map[string]EncodeFunc{
 			"json": EncoderFromMarshal(json.Marshal),
 			"yaml": EncoderFromMarshal(yaml.Marshal),
@@ -86,6 +100,10 @@ func New() *Config {
 	}
 }
 
+// SetEnvPrefix sets the environment variable prefix for the configuration.
+// All underscores in the provided string are removed before assignment.
+//
+// For example, calling SetEnvPrefix("APP_") will set the prefix to "APP".
 func (c *Config) SetEnvPrefix(p string) {
 	c.envPrefix = strings.ReplaceAll(p, "_", "")
 }
@@ -97,28 +115,13 @@ func basenameWithoutExt(path string) string {
 	return base[:len(base)-len(ext)]
 }
 
-// GetConfigFiles resolves and returns all configuration files that should be read by ReadConfig.
-// It processes all registered paths (added via AddPath/AddFile) and returns a consolidated list
-// of valid configuration files according to these rules:
+// GetConfigFiles returns all config file paths to be loaded by ReadConfig. It
+// resolves registered files (AddFile) and directories (AddPath), matching the
+// config filename across supported extensions. Missing or invalid paths are
+// skipped with debug logs. Paths are returned in registration order.
 //
-// 1. For paths marked as "full" (added via AddFile):
-//   - Verifies the exact file path exists
-//   - Includes it directly if found
-//
-// 2. For regular directory paths (added via AddPath):
-//   - Scans the directory for files matching the Config's filename (without extension)
-//   - Skips subdirectories and non-matching files
-//   - Includes matching files with their full paths
-//
-// The method handles path resolution (using FindPath) and silently skips invalid paths,
-// logging debug information for troubleshooting. The returned paths are ordered according
-// to the original registration order of their parent directories.
-//
-// Example: For fileName "config" and path "/etc/app", it would match:
-//
-//	"/etc/app/config.json", "/etc/app/config.yaml", etc.
-//
-// Returns: A slice of absolute file paths ready for configuration loading
+// Example: fileName "config", path "/etc/app" → matches "/etc/app/config.json",
+// "/etc/app/config.yaml", etc.
 func (c *Config) GetConfigFiles() []string {
 	paths := make([]string, 0)
 
@@ -158,8 +161,9 @@ func (c *Config) GetConfigFiles() []string {
 
 // SetFormat sets the default configuration format to be used when there isn't
 // any encoder or decoder available for a specific format. The format string
-// should specify the configuration format (e.g., "json", "yaml", "toml").
-// This is a global convenience function that delegates to the default config instance.
+// should specify the configuration format (e.g., "json", "yaml", "toml"). This
+// is a global convenience function that delegates to the default config
+// instance.
 func SetFormat(f string) { cfg.SetFormat(f) }
 
 // SetFormat sets the default configuration format for this Config instance.
@@ -182,8 +186,8 @@ func (c *Config) AddPath(p string) {
 }
 
 // AddFile adds a specific file path to be loaded as a configuration file.
-// This is a global convenience function that delegates to the default config instance.
-// The file will be marked for loading and added to the search paths.
+// This is a global convenience function that delegates to the default config
+// instance. The file will be marked for loading and added to the search paths.
 func AddFile(p string) { cfg.AddFile(p) }
 
 // AddFile adds a specific file path to the Config instance, marking it to be
@@ -195,11 +199,26 @@ func (c *Config) AddFile(p string) {
 	c.paths = append(c.paths, p)
 }
 
+// ReadConfig loads config files from GetConfigFiles(), following any "include"
+// directives to merge additional files recursively. Later values override
+// earlier ones.
+//
+// Example:
+//
+//	main.json:
+//	  { "include": ["a.yaml"], "app": { "port": "8080" } }
+//	a.yaml:
+//	  app: { "port": 9000, "env": "prod" }
+//
+// Result:
+//
+//	app.port = "8080"   // overridden by main.json
+//	app.env  = "prod"   // merged from a.yaml
 func (c *Config) ReadConfig() {
 	config := map[string]any{}
 	paths := c.GetConfigFiles()
 	for path := range slices.Values(paths) {
-		visited := make(map[string]bool)
+		visited := map[string]bool{}
 		m, err := c.readConfigFile(path, visited)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -226,7 +245,7 @@ func (c *Config) readConfigFile(path string, visited map[string]bool) (map[strin
 		return nil, err
 	}
 
-	base := make(map[string]any)
+	base := map[string]any{}
 	dir := filepath.Dir(path)
 
 	if includeVal, ok := m["include"]; ok {
@@ -292,6 +311,7 @@ func (c *Config) parse(path string) (m map[string]any, err error) {
 	return m, nil
 }
 
+// Set sets a value to sepecfic key
 func (c *Config) Set(key string, v any) error {
 	if key == "." {
 		m, ok := v.(map[string]any)
@@ -314,12 +334,12 @@ func (c *Config) Set(key string, v any) error {
 				m = subMap
 			} else {
 				// Overwrite non-map value with a new map
-				newMap := make(map[string]any)
+				newMap := map[string]any{}
 				m[part] = newMap
 				m = newMap
 			}
 		} else {
-			newMap := make(map[string]any)
+			newMap := map[string]any{}
 			m[part] = newMap
 			m = newMap
 		}
@@ -328,7 +348,7 @@ func (c *Config) Set(key string, v any) error {
 	return nil
 }
 
-// Keps returns top-level keys of config
+// Keys returns top-level keys of config
 func (c *Config) Keys() []string {
 	if c.config == nil {
 		return make([]string, 0)
@@ -345,7 +365,7 @@ func (c *Config) Settings() map[string]any {
 	return c.config
 }
 
-// Get returns the value for the key, or error if missing/invalid.
+// GetE returns the value for the key, or error if missing/invalid.
 func GetE(key string) (any, error) { return cfg.GetE(key) }
 
 // GetE returns the value for the key, or an error if missing/invalid.
@@ -399,10 +419,12 @@ func (c *Config) GetValueE(key string) (reflect.Value, error) {
 	return reflect.ValueOf(v), nil
 }
 
-// GetValueE returns the reflect.Value for the key. Returns default value if missing/invalid.
+// GetValue returns the reflect.Value for the key. Returns default value if
+// missing/invalid.
 func GetValue(key string) reflect.Value { return cfg.GetValue(key) }
 
-// GetValueE returns the reflect.Value for the key. Returns default value if missing/invalid.
+// GetValue returns the reflect.Value for the key. Returns default value if
+// missing/invalid.
 func (c *Config) GetValue(key string) reflect.Value {
 	v, err := c.GetE(key)
 	if err != nil {
@@ -411,18 +433,18 @@ func (c *Config) GetValue(key string) reflect.Value {
 	return reflect.ValueOf(v)
 }
 
-// GetInt returns the int value for the key, or false if missing/invalid.
+// GetIntE returns the int value for the key, or error if missing/invalid.
 func GetIntE(key string) (int, error) { return cfg.GetIntE(key) }
 
-// GetInt returns the int value for the key, or false if missing/invalid.
+// GetIntE returns the int value for the key, or error if missing/invalid.
 func (c *Config) GetIntE(key string) (int, error) {
 	return getValueE(c, key, cast.ToIntE)
 }
 
-// GetInt returns the int value for the key. Panics if missing/invalid.
+// GetIntMust returns the int value for the key. Panics if missing/invalid.
 func GetIntMust(key string) int { return cfg.GetIntMust(key) }
 
-// GetInt returns the int value for the key. Panics if missing/invalid.
+// GetIntMust returns the int value for the key. Panics if missing/invalid.
 func (c *Config) GetIntMust(key string) int {
 	return getValueMust(c, key, cast.ToIntE)
 }
@@ -435,10 +457,10 @@ func (c *Config) GetInt(key string) int {
 	return getValue(c, key, cast.ToIntE)
 }
 
-// GetInt64 returns the int64 value for the key, or false if missing/invalid.
+// GetInt64E returns the int64 value for the key, or error if missing/invalid.
 func GetInt64E(key string) (int64, error) { return cfg.GetInt64E(key) }
 
-// GetInt64 returns the int64 value for the key, or false if missing/invalid.
+// GetInt64E returns the int64 value for the key, or error if missing/invalid.
 func (c *Config) GetInt64E(key string) (int64, error) {
 	return getValueE(c, key, cast.ToInt64E)
 }
@@ -459,10 +481,10 @@ func (c *Config) GetInt64(key string) int64 {
 	return getValue(c, key, cast.ToInt64E)
 }
 
-// GetUint returns the uint value for the key, or false if missing/invalid.
+// GetUintE returns the uint value for the key, or error if missing/invalid.
 func GetUintE(key string) (uint, error) { return cfg.GetUintE(key) }
 
-// GetUint returns the uint value for the key, or false if missing/invalid.
+// GetUintE returns the uint value for the key, or error if missing/invalid.
 func (c *Config) GetUintE(key string) (uint, error) {
 	return getValueE(c, key, cast.ToUintE)
 }
@@ -483,10 +505,10 @@ func (c *Config) GetUint(key string) uint {
 	return getValue(c, key, cast.ToUintE)
 }
 
-// GetUint64 returns the uint64 value for the key, or false if missing/invalid.
+// GetUint64E returns the uint64 value for the key, or error if missing/invalid.
 func GetUint64E(key string) (uint64, error) { return cfg.GetUint64E(key) }
 
-// GetUint64 returns the uint64 value for the key, or false if missing/invalid.
+// GetUint64E returns the uint64 value for the key, or error if missing/invalid.
 func (c *Config) GetUint64E(key string) (uint64, error) {
 	return getValueE(c, key, cast.ToUint64E)
 }
@@ -507,34 +529,38 @@ func (c *Config) GetUint64(key string) uint64 {
 	return getValue(c, key, cast.ToUint64E)
 }
 
-// GetString returns the string value for the key, or false if missing/invalid.
+// GetStringE returns the string value for the key, or error if missing/invalid.
 func GetStringE(key string) (string, error) { return cfg.GetStringE(key) }
 
-// GetString returns the string value for the key, or false if missing/invalid.
+// GetStringE returns the string value for the key, or error if missing/invalid.
 func (c *Config) GetStringE(key string) (string, error) {
 	return getValueE(c, key, cast.ToStringE)
 }
 
-// GetStringMust returns the string value for the key. Panics if missing/invalid.
+// GetStringMust returns the string value for the key. Panics if
+// missing/invalid.
 func GetStringMust(key string) string { return cfg.GetStringMust(key) }
 
-// GetStringMust returns the string value for the key. Panics if missing/invalid.
+// GetStringMust returns the string value for the key. Panics if
+// missing/invalid.
 func (c *Config) GetStringMust(key string) string {
 	return getValueMust(c, key, cast.ToStringE)
 }
 
-// GetString returns the string value for the key. Returns default if missing/invalid.
+// GetString returns the string value for the key. Returns default if
+// missing/invalid.
 func GetString(key string) string { return cfg.GetString(key) }
 
-// GetString returns the string value for the key. Returns default if missing/invalid.
+// GetString returns the string value for the key. Returns default if
+// missing/invalid.
 func (c *Config) GetString(key string) string {
 	return getValue(c, key, cast.ToStringE)
 }
 
-// GetBool returns the bool value for the key, or false if missing/invalid.
+// GetBoolE returns the bool value for the key, or error if missing/invalid.
 func GetBoolE(key string) (bool, error) { return cfg.GetBoolE(key) }
 
-// GetBool returns the bool value for the key, or false if missing/invalid.
+// GetBoolE returns the bool value for the key, or error if missing/invalid.
 func (c *Config) GetBoolE(key string) (bool, error) {
 	return getValueE(c, key, cast.ToBoolE)
 }

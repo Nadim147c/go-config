@@ -9,6 +9,29 @@ import (
 	"github.com/spf13/cast"
 )
 
+// Bind maps the configuration values from the Config instance into a structured
+// Go type. It uses struct tags to determine how to bind the data and can also
+// perform validation.
+//
+// Example:
+//
+//	type MyConfig struct {
+//	    Port int    `config:"port" validate:"min=1000,max=9999"`
+//	    Key  string `config:"key"`
+//	}
+//
+//	var cfg MyConfig
+//	c := config.New()
+//	c.ReadConfig()
+//	c.Bind(&cfg)
+//
+// Parameters:
+//   - v: A pointer to a struct where the configuration values will be
+//     populated.
+//
+// Returns:
+//   - error: If the input is not a non-nil pointer to a struct, or if binding
+//     fails.
 func (c *Config) Bind(v any) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Pointer || rv.IsNil() {
@@ -138,29 +161,6 @@ func resolvePointer(sv reflect.Value) reflect.Value {
 		i++
 	}
 	return sv
-}
-
-func tryConvertBasic(v reflect.Value, dst reflect.Type) (reflect.Value, bool) {
-	if !v.IsValid() {
-		return reflect.Value{}, false
-	}
-	// Allow numeric width adjustments
-	switch {
-	case v.Kind() == reflect.Int && dst.Kind() >= reflect.Int && dst.Kind() <= reflect.Int64:
-		return v.Convert(dst), true
-	case v.Kind() == reflect.Int64 && dst.Kind() >= reflect.Int && dst.Kind() <= reflect.Int64:
-		return v.Convert(dst), true
-	case v.Kind() == reflect.Uint && dst.Kind() >= reflect.Uint && dst.Kind() <= reflect.Uint64:
-		return v.Convert(dst), true
-	case v.Kind() == reflect.Uint64 && dst.Kind() >= reflect.Uint && dst.Kind() <= reflect.Uint64:
-		return v.Convert(dst), true
-	case v.Kind() == reflect.Bool && dst.Kind() == reflect.Bool:
-		return v.Convert(dst), true
-	case v.Kind() == reflect.String && dst.Kind() == reflect.String:
-		return v.Convert(dst), true
-	default:
-		return reflect.Value{}, false
-	}
 }
 
 func isZeroValue(v reflect.Value) bool {

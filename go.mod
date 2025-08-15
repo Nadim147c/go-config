@@ -6,10 +6,8 @@ require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/adrg/xdg v0.5.3
 	github.com/goccy/go-yaml v1.18.0
+	github.com/google/uuid v1.6.0
+	github.com/spf13/cast v1.9.2
 )
 
-require (
-	github.com/google/uuid v1.6.0 // indirect
-	github.com/spf13/cast v1.9.2 // indirect
-	golang.org/x/sys v0.26.0 // indirect
-)
+require golang.org/x/sys v0.26.0 // indirect

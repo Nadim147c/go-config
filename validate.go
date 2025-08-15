@@ -12,8 +12,44 @@ import (
 	"github.com/spf13/cast"
 )
 
+// Validate applies validation rules to a given struct field based on its
+// "check" tag.
+//
+// It supports the following rules:
+//   - required: Field must be changed from its zero value (checked via the
+//     `changed` flag).
+//   - default: If the field is zero-valued, sets it to the specified default
+//     value (supports string, int, uint, float, bool).
+//   - base64: Ensures the field is a valid base64-encoded string (length,
+//     character set, padding).
+//   - email: Ensures the field is a valid email address without a display name.
+//   - uuid: Ensures the field is a valid UUID.
+//   - alpha: Field must contain only alphabetic letters (A-Z, a-z).
+//   - alphanumeric: Field must contain only letters or digits.
+//   - number: Field must contain only digits (0-9).
+//   - match: Field must match the provided regular expression pattern.
+//   - min: For strings, arrays, slices, channels, and maps, enforces a minimum
+//     length; for integers/unsigned integers, enforces a minimum numeric value.
+//   - max: For strings, arrays, slices, channels, and maps, enforces a maximum
+//     length; for integers/unsigned integers, enforces a maximum numeric value.
+//
+// Parameters:
+//   - sf: The struct field metadata.
+//   - sfv: The reflect.Value of the struct field.
+//   - changed: Indicates whether the field value has been modified from its
+//     original state.
+//
+// Returns:
+//   - error: A descriptive error if validation fails, or nil if all rules pass.
+//
+// Panics if:
+//   - An unknown validation rule is provided.
+//   - A rule is applied to an unsupported type.
+//   - "default" rule is applied to an unsupported kind.
+//   - Type mismatches occur for rules like base64, email, uuid, alpha,
+//     alphanumeric, number, or match.
 func Validate(sf reflect.StructField, sfv reflect.Value, changed bool) error {
-	ruleTag, ok := sf.Tag.Lookup("validate")
+	ruleTag, ok := sf.Tag.Lookup("check")
 	if !ok {
 		return nil
 	}
@@ -56,7 +92,7 @@ func Validate(sf reflect.StructField, sfv reflect.Value, changed bool) error {
 
 			// Quick base64 structural validation
 			if len(str)%4 != 0 {
-				return fmt.Errorf("invalid base64 length")
+				return errors.New("invalid base64 length")
 			}
 			for i := 0; i < len(str); i++ {
 				c := str[i]
@@ -70,7 +106,7 @@ func Validate(sf reflect.StructField, sfv reflect.Value, changed bool) error {
 			// Padding check
 			if pad := strings.Count(str, "="); pad > 2 ||
 				(pad > 0 && !strings.HasSuffix(str, strings.Repeat("=", pad))) {
-				return fmt.Errorf("invalid base64 padding")
+				return errors.New("invalid base64 padding")
 			}
 		case "email":
 			value := resolvePointer(sfv)
@@ -83,7 +119,7 @@ func Validate(sf reflect.StructField, sfv reflect.Value, changed bool) error {
 				return fmt.Errorf("invalid email: %w", err)
 			}
 			if addr.Name != "" {
-				return fmt.Errorf("email must not contain a display name")
+				return errors.New("email must not contain a display name")
 			}
 			sfv.SetString(addr.Address)
 		case "uuid":
@@ -131,7 +167,7 @@ func Validate(sf reflect.StructField, sfv reflect.Value, changed bool) error {
 			}
 			str := value.String()
 			if len(str) == 0 {
-				return fmt.Errorf("number must not be empty")
+				return errors.New("number must not be empty")
 			}
 			for i := 0; i < len(str); i++ {
 				if str[i] < '0' || str[i] > '9' {

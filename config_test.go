@@ -17,7 +17,7 @@ func must[T any](v T, err error) T {
 	return v
 }
 
-func Json(v any) string {
+func JSON(v any) string {
 	return string(must(json.MarshalIndent(v, "", "   ")))
 }
 
@@ -53,8 +53,8 @@ func TestReadConfigWithIncludes(t *testing.T) {
 
 	if !reflect.DeepEqual(c.Settings(), expected) {
 		t.Fatalf("Config does not match expected structure:\nGot: %s\nWant: %s",
-			Json(c.Settings()),
-			Json(expected))
+			JSON(c.Settings()),
+			JSON(expected))
 	}
 
 	// Verify no include keys remain

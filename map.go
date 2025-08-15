@@ -2,6 +2,15 @@ package config
 
 import "reflect"
 
+// DeepMerge recursively merges src into dst, combining nested maps rather than
+// replacing them. Non-map values in src overwrite those in dst. Both maps must
+// have string keys. Returns the updated dst.
+//
+// Example:
+//
+//	dst = { "a": { "x": 1 }, "b": 2 }
+//	src = { "a": { "y": 3 }, "b": 4 }
+//	DeepMerge(dst, src) → { "a": { "x": 1, "y": 3 }, "b": 4 }
 func DeepMerge(dst, src map[string]any) map[string]any {
 	if dst == nil {
 		dst = map[string]any{}

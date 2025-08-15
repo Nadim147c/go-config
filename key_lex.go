@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"unicode/utf8"
@@ -44,13 +45,12 @@ func KeySplit(key string) ([]string, error) {
 
 		case r == '\\':
 			// Handle escapes
-			if i+1 < len(key) {
-				nextRune, width := utf8.DecodeRuneInString(key[i+1:])
-				buf.WriteRune(nextRune)
-				i += width - 1 // skip consumed rune
-			} else {
+			if i+1 >= len(key) {
 				return nil, fmt.Errorf("dangling escape at position %d", i)
 			}
+			nextRune, width := utf8.DecodeRuneInString(key[i+1:])
+			buf.WriteRune(nextRune)
+			i += width - 1 // skip consumed rune
 
 		default:
 			buf.WriteRune(r)
@@ -58,7 +58,7 @@ func KeySplit(key string) ([]string, error) {
 	}
 
 	if inQuotes {
-		return nil, fmt.Errorf("unclosed quote in key")
+		return nil, errors.New("unclosed quote in key")
 	}
 
 	// Last part
