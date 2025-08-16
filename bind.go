@@ -21,6 +21,30 @@ import (
 //	}
 //
 //	var cfg MyConfig
+//	config.ReadConfig()
+//	config.Bind(&cfg)
+//
+// Parameters:
+//   - v: A pointer to a struct where the configuration values will be
+//     populated.
+//
+// Returns:
+//   - error: If the input is not a non-nil pointer to a struct, or if binding
+//     fails.
+func Bind(v any) error { return Default().Bind(v) }
+
+// Bind maps the configuration values from the Config instance into a structured
+// Go type. It uses struct tags to determine how to bind the data and can also
+// perform validation.
+//
+// Example:
+//
+//	type MyConfig struct {
+//	    Port int    `config:"port" validate:"min=1000,max=9999"`
+//	    Key  string `config:"key"`
+//	}
+//
+//	var cfg MyConfig
 //	c := config.New()
 //	c.ReadConfig()
 //	c.Bind(&cfg)
