@@ -74,7 +74,9 @@ func Default() *Config {
 // sources. The struct also manages metadata and encoding/decoding behavior for
 // configuration data.
 type Config struct {
-	config    map[string]any
+	defaults map[string]any
+	config   map[string]any
+
 	envPrefix string
 	logger    *slog.Logger
 
@@ -91,6 +93,7 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		logger:   slog.Default(),
+		defaults: map[string]any{},
 		config:   map[string]any{},
 		fullPath: map[string]bool{},
 		encoders: map[string]EncodeFunc{
@@ -319,14 +322,33 @@ func (c *Config) parse(path string) (m map[string]any, err error) {
 	return m, nil
 }
 
-// Set sets a value to sepecfic key
+// Set sets a value in the default configuration under the specified key.
+func Set(key string, v any) error { return Default().Set(key, v) }
+
+// Set sets a value in the configuration under the specified key.
 func (c *Config) Set(key string, v any) error {
+	return c.setValue(&c.config, key, v)
+}
+
+// SetDefault sets a value in the default values under the specified key.
+func SetDefault(key string, v any) error { return Default().SetDefault(key, v) }
+
+// SetDefault sets a value in the configuration's default values under the
+// specified key.
+func (c *Config) SetDefault(key string, v any) error {
+	return c.setValue(&c.defaults, key, v)
+}
+
+// setValue sets a value in the provided map for a specific key. Nested keys
+// can be specified using dot notation (e.g., "database.host"). If the key is
+// ".", the entire map is replaced with the provided value.
+func (c *Config) setValue(in *map[string]any, key string, v any) error {
 	if key == "." {
-		m, ok := v.(map[string]any)
+		vm, ok := v.(map[string]any)
 		if !ok {
 			return errors.New("global config must be a map[string]any")
 		}
-		c.config = m
+		*in = vm
 	}
 
 	nested, err := KeySplit(key)
@@ -334,7 +356,7 @@ func (c *Config) Set(key string, v any) error {
 		return err
 	}
 
-	m := c.config
+	m := *in
 	for i := 0; i < len(nested)-1; i++ {
 		part := nested[i]
 		if next, ok := m[part]; ok {
@@ -376,10 +398,41 @@ func (c *Config) Settings() map[string]any {
 // GetE returns the value for the key, or error if missing/invalid.
 func GetE(key string) (any, error) { return Default().GetE(key) }
 
-// GetE returns the value for the key, or an error if missing/invalid.
+// GetE returns the value for the key, or error if missing/invalid.
 func (c *Config) GetE(key string) (any, error) {
+	v, err := c.getValue(c.config, key)
+	if err != nil {
+		c.logger.Debug("Failed to find value", "key", key, "error", err)
+		v, err := c.getValue(c.defaults, key)
+		if err == nil {
+			return v, nil
+		}
+		c.logger.Debug("Failed to find default value", "key", key, "error", err)
+	}
+	return v, err
+}
+
+// Get returns the value for the key, or error if missing/invalid.
+func Get(key string) any { return Default().Get(key) }
+
+// Get returns the value for the key, or error if missing/invalid.
+func (c *Config) Get(key string) any {
+	v, _ := c.GetE(key)
+	return v
+}
+
+// GetMust returns the value for the key, or error if missing/invalid.
+func GetMust(key string) any { return Default().Get(key) }
+
+// GetMust returns the value for the key, or error if missing/invalid.
+func (c *Config) GetMust(key string) any {
+	return Must(c.GetE(key))
+}
+
+// GetE returns the value for the key, or an error if missing/invalid.
+func (c *Config) getValue(m map[string]any, key string) (any, error) {
 	if key == "." {
-		return c.config, nil
+		return m, nil
 	}
 	nested, err := KeySplit(key)
 	if err != nil {
@@ -388,7 +441,6 @@ func (c *Config) GetE(key string) (any, error) {
 
 	var prefix strings.Builder
 
-	m := c.config
 	for i := 0; i < len(nested)-1; i++ {
 		part := nested[i]
 		prefix.WriteString(part)

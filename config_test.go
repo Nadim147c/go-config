@@ -62,6 +62,11 @@ func TestReadConfigWithIncludes(t *testing.T) {
 		t.Fatal("Final config should not contain any 'include' keys")
 	}
 
+	c.SetDefault("a.b.c.d.e.f", "nested-value")
+	if v := c.GetMust("a.b.c.d.e.f"); v != "nested-value" {
+		t.Fatalf("GetMust(\"a.b.c.d.e.f\") = %s, want = %s", v, "nested-value")
+	}
+
 	dbPort := c.GetIntMust("database.port")
 	if dbPort != 5432 {
 		t.Fatalf("c.GetInt(\"database.port\") = %d, want = %d", dbPort, 5432)
