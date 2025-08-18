@@ -248,3 +248,179 @@ func (c *Config) GetBool(key string) bool {
 	v, _ := c.GetBoolE(key)
 	return v
 }
+
+// GetStringMapE returns the stringmap value for the key, or error if missing/invalid.
+func GetStringMapE(key string) (map[string]any, error) { return Default().GetStringMapE(key) }
+
+// GetStringMapMust returns the stringmap value for the key. Panics if missing/invalid.
+func GetStringMapMust(key string) map[string]any { return Default().GetStringMapMust(key) }
+
+// GetStringMapMust returns the stringmap value for the key. Panics if missing/invalid.
+func (c *Config) GetStringMapMust(key string) map[string]any {
+	return Must(c.GetStringMapE(key))
+}
+
+// GetStringMap returns the stringmap value for the key. Returns default if missing/invalid.
+func GetStringMap(key string) map[string]any { return Default().GetStringMap(key) }
+
+// GetStringMap returns the stringmap value for the key. Returns default if missing/invalid.
+func (c *Config) GetStringMap(key string) map[string]any {
+	v, _ := c.GetStringMapE(key)
+	return v
+}
+
+// GetStringMapIntE returns the stringmapint value for the key, or error if missing/invalid.
+func GetStringMapIntE(key string) (map[string]int, error) { return Default().GetStringMapIntE(key) }
+
+// GetStringMapIntMust returns the stringmapint value for the key. Panics if missing/invalid.
+func GetStringMapIntMust(key string) map[string]int { return Default().GetStringMapIntMust(key) }
+
+// GetStringMapIntMust returns the stringmapint value for the key. Panics if missing/invalid.
+func (c *Config) GetStringMapIntMust(key string) map[string]int {
+	return Must(c.GetStringMapIntE(key))
+}
+
+// GetStringMapInt returns the stringmapint value for the key. Returns default if missing/invalid.
+func GetStringMapInt(key string) map[string]int { return Default().GetStringMapInt(key) }
+
+// GetStringMapInt returns the stringmapint value for the key. Returns default if missing/invalid.
+func (c *Config) GetStringMapInt(key string) map[string]int {
+	v, _ := c.GetStringMapIntE(key)
+	return v
+}
+
+// GetStringMapInt64E returns the stringmapint64 value for the key, or error if missing/invalid.
+func GetStringMapInt64E(key string) (map[string]int64, error) {
+	return Default().GetStringMapInt64E(key)
+}
+
+// GetStringMapInt64Must returns the stringmapint64 value for the key. Panics if missing/invalid.
+func GetStringMapInt64Must(key string) map[string]int64 { return Default().GetStringMapInt64Must(key) }
+
+// GetStringMapInt64Must returns the stringmapint64 value for the key. Panics if missing/invalid.
+func (c *Config) GetStringMapInt64Must(key string) map[string]int64 {
+	return Must(c.GetStringMapInt64E(key))
+}
+
+// GetStringMapInt64 returns the stringmapint64 value for the key. Returns default if missing/invalid.
+func GetStringMapInt64(key string) map[string]int64 { return Default().GetStringMapInt64(key) }
+
+// GetStringMapInt64 returns the stringmapint64 value for the key. Returns default if missing/invalid.
+func (c *Config) GetStringMapInt64(key string) map[string]int64 {
+	v, _ := c.GetStringMapInt64E(key)
+	return v
+}
+
+// GetStringMapUintE returns the stringmapuint value for the key, or error if missing/invalid.
+func GetStringMapUintE(key string) (map[string]uint, error) { return Default().GetStringMapUintE(key) }
+
+// GetStringMapUintMust returns the stringmapuint value for the key. Panics if missing/invalid.
+func GetStringMapUintMust(key string) map[string]uint { return Default().GetStringMapUintMust(key) }
+
+// GetStringMapUintMust returns the stringmapuint value for the key. Panics if missing/invalid.
+func (c *Config) GetStringMapUintMust(key string) map[string]uint {
+	return Must(c.GetStringMapUintE(key))
+}
+
+// GetStringMapUint returns the stringmapuint value for the key. Returns default if missing/invalid.
+func GetStringMapUint(key string) map[string]uint { return Default().GetStringMapUint(key) }
+
+// GetStringMapUint returns the stringmapuint value for the key. Returns default if missing/invalid.
+func (c *Config) GetStringMapUint(key string) map[string]uint {
+	v, _ := c.GetStringMapUintE(key)
+	return v
+}
+
+// GetStringMapUint64E returns the stringmapuint64 value for the key, or error if missing/invalid.
+func GetStringMapUint64E(key string) (map[string]uint64, error) {
+	return Default().GetStringMapUint64E(key)
+}
+
+// GetStringMapUint64Must returns the stringmapuint64 value for the key. Panics if missing/invalid.
+func GetStringMapUint64Must(key string) map[string]uint64 {
+	return Default().GetStringMapUint64Must(key)
+}
+
+// GetStringMapUint64Must returns the stringmapuint64 value for the key. Panics if missing/invalid.
+func (c *Config) GetStringMapUint64Must(key string) map[string]uint64 {
+	return Must(c.GetStringMapUint64E(key))
+}
+
+// GetStringMapUint64 returns the stringmapuint64 value for the key. Returns default if missing/invalid.
+func GetStringMapUint64(key string) map[string]uint64 { return Default().GetStringMapUint64(key) }
+
+// GetStringMapUint64 returns the stringmapuint64 value for the key. Returns default if missing/invalid.
+func (c *Config) GetStringMapUint64(key string) map[string]uint64 {
+	v, _ := c.GetStringMapUint64E(key)
+	return v
+}
+
+// GetStringMapStringE returns the stringmapstring value for the key, or error if missing/invalid.
+func GetStringMapStringE(key string) (map[string]string, error) {
+	return Default().GetStringMapStringE(key)
+}
+
+// GetStringMapStringMust returns the stringmapstring value for the key. Panics if missing/invalid.
+func GetStringMapStringMust(key string) map[string]string {
+	return Default().GetStringMapStringMust(key)
+}
+
+// GetStringMapStringMust returns the stringmapstring value for the key. Panics if missing/invalid.
+func (c *Config) GetStringMapStringMust(key string) map[string]string {
+	return Must(c.GetStringMapStringE(key))
+}
+
+// GetStringMapString returns the stringmapstring value for the key. Returns default if missing/invalid.
+func GetStringMapString(key string) map[string]string { return Default().GetStringMapString(key) }
+
+// GetStringMapString returns the stringmapstring value for the key. Returns default if missing/invalid.
+func (c *Config) GetStringMapString(key string) map[string]string {
+	v, _ := c.GetStringMapStringE(key)
+	return v
+}
+
+// GetStringMapBoolE returns the stringmapbool value for the key, or error if missing/invalid.
+func GetStringMapBoolE(key string) (map[string]bool, error) { return Default().GetStringMapBoolE(key) }
+
+// GetStringMapBoolMust returns the stringmapbool value for the key. Panics if missing/invalid.
+func GetStringMapBoolMust(key string) map[string]bool { return Default().GetStringMapBoolMust(key) }
+
+// GetStringMapBoolMust returns the stringmapbool value for the key. Panics if missing/invalid.
+func (c *Config) GetStringMapBoolMust(key string) map[string]bool {
+	return Must(c.GetStringMapBoolE(key))
+}
+
+// GetStringMapBool returns the stringmapbool value for the key. Returns default if missing/invalid.
+func GetStringMapBool(key string) map[string]bool { return Default().GetStringMapBool(key) }
+
+// GetStringMapBool returns the stringmapbool value for the key. Returns default if missing/invalid.
+func (c *Config) GetStringMapBool(key string) map[string]bool {
+	v, _ := c.GetStringMapBoolE(key)
+	return v
+}
+
+// GetStringMapStringSliceE returns the stringmapstringslice value for the key, or error if missing/invalid.
+func GetStringMapStringSliceE(key string) (map[string][]string, error) {
+	return Default().GetStringMapStringSliceE(key)
+}
+
+// GetStringMapStringSliceMust returns the stringmapstringslice value for the key. Panics if missing/invalid.
+func GetStringMapStringSliceMust(key string) map[string][]string {
+	return Default().GetStringMapStringSliceMust(key)
+}
+
+// GetStringMapStringSliceMust returns the stringmapstringslice value for the key. Panics if missing/invalid.
+func (c *Config) GetStringMapStringSliceMust(key string) map[string][]string {
+	return Must(c.GetStringMapStringSliceE(key))
+}
+
+// GetStringMapStringSlice returns the stringmapstringslice value for the key. Returns default if missing/invalid.
+func GetStringMapStringSlice(key string) map[string][]string {
+	return Default().GetStringMapStringSlice(key)
+}
+
+// GetStringMapStringSlice returns the stringmapstringslice value for the key. Returns default if missing/invalid.
+func (c *Config) GetStringMapStringSlice(key string) map[string][]string {
+	v, _ := c.GetStringMapStringSliceE(key)
+	return v
+}

@@ -468,6 +468,75 @@ func (c *Config) GetBoolE(key string) (bool, error) {
 	return getValueE(c, key, cast.ToBoolE)
 }
 
+// GetStringMapE returns the map[string]any value for the key, or error if
+// missing/invalid.
+func (c *Config) GetStringMapE(key string) (map[string]any, error) {
+	return getValueE(c, key, cast.ToStringMapE)
+}
+
+// GetStringMapIntE returns the map[string]any value for the key, or error if
+// missing/invalid.
+func (c *Config) GetStringMapIntE(key string) (map[string]int, error) {
+	return getValueE(c, key, cast.ToStringMapIntE)
+}
+
+// GetStringMapInt64E returns the map[string]int64 value for the key, or error if
+// missing/invalid.
+func (c *Config) GetStringMapInt64E(key string) (map[string]int64, error) {
+	return getValueE(c, key, cast.ToStringMapInt64E)
+}
+
+// GetStringMapUintE returns the map[string]uint value for the key, or error if
+// missing/invalid.
+func (c *Config) GetStringMapUintE(key string) (map[string]uint, error) {
+	return toStringMapAny(c, key, cast.ToUintE)
+}
+
+// GetStringMapUint64E returns the map[string]uint64 value for the key, or error if
+// missing/invalid.
+func (c *Config) GetStringMapUint64E(key string) (map[string]uint64, error) {
+	return toStringMapAny(c, key, cast.ToUint64E)
+}
+
+// GetStringMapStringE returns the map[string]string value for the key, or error if
+// missing/invalid.
+func (c *Config) GetStringMapStringE(key string) (map[string]string, error) {
+	return getValueE(c, key, cast.ToStringMapStringE)
+}
+
+// GetStringMapBoolE returns the map[string]bool value for the key, or error if
+// missing/invalid.
+func (c *Config) GetStringMapBoolE(key string) (map[string]bool, error) {
+	return getValueE(c, key, cast.ToStringMapBoolE)
+}
+
+// GetStringMapStringSliceE returns the map[string][]string value for the key, or error if
+// missing/invalid.
+func (c *Config) GetStringMapStringSliceE(key string) (map[string][]string, error) {
+	return getValueE(c, key, cast.ToStringMapStringSliceE)
+}
+
+func toStringMapAny[T any](c *Config, key string, conv func(any) (T, error)) (map[string]T, error) {
+	var zero map[string]T
+	v, err := c.GetE(key)
+	if err != nil {
+		return zero, err
+	}
+	m, err := cast.ToStringMapE(v)
+	if err != nil {
+		return zero, err
+	}
+	out := map[string]T{}
+	for k, v := range m {
+		converted, err := conv(v)
+		if err != nil {
+			return out, err
+		}
+		out[k] = converted
+	}
+	return out, nil
+}
+
 // Generic helper for type-safe get with casting
 func getValueE[T any](c *Config, key string, conv func(any) (T, error)) (T, error) {
 	var zero T
