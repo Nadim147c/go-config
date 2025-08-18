@@ -22,3 +22,7 @@ max_line_length = 80
 # Markdown specific settings
 [*.md]
 max_line_length = 100
+
+[Makefile*]
+indent_style = tab
+indent_size = 2

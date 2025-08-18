@@ -170,13 +170,6 @@ func (c *Config) GetConfigFiles() []string {
 	return paths
 }
 
-// SetFormat sets the default configuration format to be used when there isn't
-// any encoder or decoder available for a specific format. The format string
-// should specify the configuration format (e.g., "json", "yaml", "toml"). This
-// is a global convenience function that delegates to the default config
-// instance.
-func SetFormat(f string) { Default().SetFormat(f) }
-
 // SetFormat sets the default configuration format for this Config instance.
 // The format will be used when no specific encoder/decoder is available for
 // a requested format. Typical formats include "json", "yaml", "toml", etc.
@@ -184,22 +177,12 @@ func (c *Config) SetFormat(f string) {
 	c.defaultFormat = f
 }
 
-// AddPath adds a file path to the list of paths that will be searched for
-// configuration files. This is a global convenience function that delegates
-// to the default config instance.
-func AddPath(p string) { Default().AddPath(p) }
-
 // AddPath adds a file path to the Config instance's list of search paths.
 // These paths will be used when looking for configuration files to load.
 // Duplicate paths may be added.
 func (c *Config) AddPath(p string) {
 	c.paths = append(c.paths, p)
 }
-
-// AddFile adds a specific file path to be loaded as a configuration file.
-// This is a global convenience function that delegates to the default config
-// instance. The file will be marked for loading and added to the search paths.
-func AddFile(p string) { Default().AddFile(p) }
 
 // AddFile adds a specific file path to the Config instance, marking it to be
 // loaded as a configuration file. The file is added to both the fullPath map
@@ -225,7 +208,7 @@ func (c *Config) AddFile(p string) {
 //
 //	app.port = "8080"   // overridden by main.json
 //	app.env  = "prod"   // merged from a.yaml
-func (c *Config) ReadConfig() {
+func (c *Config) ReadConfig() error {
 	config := map[string]any{}
 	paths := c.GetConfigFiles()
 	for path := range slices.Values(paths) {
@@ -242,6 +225,10 @@ func (c *Config) ReadConfig() {
 		DeepMerge(config, m)
 	}
 	c.config = config
+	if len(config) == 0 {
+		return errors.New("No configuration found")
+	}
+	return nil
 }
 
 func (c *Config) readConfigFile(path string, visited map[string]bool) (map[string]any, error) {
@@ -322,16 +309,10 @@ func (c *Config) parse(path string) (m map[string]any, err error) {
 	return m, nil
 }
 
-// Set sets a value in the default configuration under the specified key.
-func Set(key string, v any) error { return Default().Set(key, v) }
-
 // Set sets a value in the configuration under the specified key.
 func (c *Config) Set(key string, v any) error {
 	return c.setValue(&c.config, key, v)
 }
-
-// SetDefault sets a value in the default values under the specified key.
-func SetDefault(key string, v any) error { return Default().SetDefault(key, v) }
 
 // SetDefault sets a value in the configuration's default values under the
 // specified key.
@@ -396,9 +377,6 @@ func (c *Config) Settings() map[string]any {
 }
 
 // GetE returns the value for the key, or error if missing/invalid.
-func GetE(key string) (any, error) { return Default().GetE(key) }
-
-// GetE returns the value for the key, or error if missing/invalid.
 func (c *Config) GetE(key string) (any, error) {
 	v, err := c.getValue(c.config, key)
 	if err != nil {
@@ -410,23 +388,6 @@ func (c *Config) GetE(key string) (any, error) {
 		c.logger.Debug("Failed to find default value", "key", key, "error", err)
 	}
 	return v, err
-}
-
-// Get returns the value for the key, or error if missing/invalid.
-func Get(key string) any { return Default().Get(key) }
-
-// Get returns the value for the key, or error if missing/invalid.
-func (c *Config) Get(key string) any {
-	v, _ := c.GetE(key)
-	return v
-}
-
-// GetMust returns the value for the key, or error if missing/invalid.
-func GetMust(key string) any { return Default().Get(key) }
-
-// GetMust returns the value for the key, or error if missing/invalid.
-func (c *Config) GetMust(key string) any {
-	return Must(c.GetE(key))
 }
 
 // GetE returns the value for the key, or an error if missing/invalid.
@@ -469,9 +430,6 @@ func (c *Config) getValue(m map[string]any, key string) (any, error) {
 }
 
 // GetValueE returns the reflect.Value for the key, or error if missing/invalid.
-func GetValueE(key string) (reflect.Value, error) { return Default().GetValueE(key) }
-
-// GetValueE returns the reflect.Value for the key, or error if missing/invalid.
 func (c *Config) GetValueE(key string) (reflect.Value, error) {
 	v, err := c.GetE(key)
 	if err != nil {
@@ -480,175 +438,34 @@ func (c *Config) GetValueE(key string) (reflect.Value, error) {
 	return reflect.ValueOf(v), nil
 }
 
-// GetValue returns the reflect.Value for the key. Returns default value if
-// missing/invalid.
-func GetValue(key string) reflect.Value { return Default().GetValue(key) }
-
-// GetValue returns the reflect.Value for the key. Returns default value if
-// missing/invalid.
-func (c *Config) GetValue(key string) reflect.Value {
-	v, err := c.GetE(key)
-	if err != nil {
-		return reflect.Value{}
-	}
-	return reflect.ValueOf(v)
-}
-
-// GetIntE returns the int value for the key, or error if missing/invalid.
-func GetIntE(key string) (int, error) { return Default().GetIntE(key) }
-
 // GetIntE returns the int value for the key, or error if missing/invalid.
 func (c *Config) GetIntE(key string) (int, error) {
 	return getValueE(c, key, cast.ToIntE)
 }
-
-// GetIntMust returns the int value for the key. Panics if missing/invalid.
-func GetIntMust(key string) int { return Default().GetIntMust(key) }
-
-// GetIntMust returns the int value for the key. Panics if missing/invalid.
-func (c *Config) GetIntMust(key string) int {
-	return getValueMust(c, key, cast.ToIntE)
-}
-
-// GetInt returns the int value for the key. Returns default if missing/invalid.
-func GetInt(key string) int { return Default().GetInt(key) }
-
-// GetInt returns the int value for the key. Returns default if missing/invalid.
-func (c *Config) GetInt(key string) int {
-	return getValue(c, key, cast.ToIntE)
-}
-
-// GetInt64E returns the int64 value for the key, or error if missing/invalid.
-func GetInt64E(key string) (int64, error) { return Default().GetInt64E(key) }
 
 // GetInt64E returns the int64 value for the key, or error if missing/invalid.
 func (c *Config) GetInt64E(key string) (int64, error) {
 	return getValueE(c, key, cast.ToInt64E)
 }
 
-// GetInt64Must returns the int64 value for the key. Panics if missing/invalid.
-func GetInt64Must(key string) int64 { return Default().GetInt64Must(key) }
-
-// GetInt64Must returns the int64 value for the key. Panics if missing/invalid.
-func (c *Config) GetInt64Must(key string) int64 {
-	return getValueMust(c, key, cast.ToInt64E)
-}
-
-// GetInt64 returns the int64 value for the key. Returns default if
-// missing/invalid.
-func GetInt64(key string) int64 { return Default().GetInt64(key) }
-
-// GetInt64 returns the int64 value for the key. Returns default if
-// missing/invalid.
-func (c *Config) GetInt64(key string) int64 {
-	return getValue(c, key, cast.ToInt64E)
-}
-
-// GetUintE returns the uint value for the key, or error if missing/invalid.
-func GetUintE(key string) (uint, error) { return Default().GetUintE(key) }
-
 // GetUintE returns the uint value for the key, or error if missing/invalid.
 func (c *Config) GetUintE(key string) (uint, error) {
 	return getValueE(c, key, cast.ToUintE)
 }
-
-// GetUintMust returns the uint value for the key. Panics if missing/invalid.
-func GetUintMust(key string) uint { return Default().GetUintMust(key) }
-
-// GetUintMust returns the uint value for the key. Panics if missing/invalid.
-func (c *Config) GetUintMust(key string) uint {
-	return getValueMust(c, key, cast.ToUintE)
-}
-
-// GetUint returns the uint value for the key. Returns default if missing/invalid.
-func GetUint(key string) uint { return Default().GetUint(key) }
-
-// GetUint returns the uint value for the key. Returns default if
-// missing/invalid.
-func (c *Config) GetUint(key string) uint {
-	return getValue(c, key, cast.ToUintE)
-}
-
-// GetUint64E returns the uint64 value for the key, or error if missing/invalid.
-func GetUint64E(key string) (uint64, error) { return Default().GetUint64E(key) }
 
 // GetUint64E returns the uint64 value for the key, or error if missing/invalid.
 func (c *Config) GetUint64E(key string) (uint64, error) {
 	return getValueE(c, key, cast.ToUint64E)
 }
 
-// GetUint64Must returns the uint64 value for the key. Panics if
-// missing/invalid.
-func GetUint64Must(key string) uint64 { return Default().GetUint64Must(key) }
-
-// GetUint64Must returns the uint64 value for the key. Panics if
-// missing/invalid.
-func (c *Config) GetUint64Must(key string) uint64 {
-	return getValueMust(c, key, cast.ToUint64E)
-}
-
-// GetUint64 returns the uint64 value for the key. Returns default if
-// missing/invalid.
-func GetUint64(key string) uint64 { return Default().GetUint64(key) }
-
-// GetUint64 returns the uint64 value for the key. Returns default if
-// missing/invalid.
-func (c *Config) GetUint64(key string) uint64 {
-	return getValue(c, key, cast.ToUint64E)
-}
-
-// GetStringE returns the string value for the key, or error if missing/invalid.
-func GetStringE(key string) (string, error) { return Default().GetStringE(key) }
-
 // GetStringE returns the string value for the key, or error if missing/invalid.
 func (c *Config) GetStringE(key string) (string, error) {
 	return getValueE(c, key, cast.ToStringE)
 }
 
-// GetStringMust returns the string value for the key. Panics if
-// missing/invalid.
-func GetStringMust(key string) string { return Default().GetStringMust(key) }
-
-// GetStringMust returns the string value for the key. Panics if
-// missing/invalid.
-func (c *Config) GetStringMust(key string) string {
-	return getValueMust(c, key, cast.ToStringE)
-}
-
-// GetString returns the string value for the key. Returns default if
-// missing/invalid.
-func GetString(key string) string { return Default().GetString(key) }
-
-// GetString returns the string value for the key. Returns default if
-// missing/invalid.
-func (c *Config) GetString(key string) string {
-	return getValue(c, key, cast.ToStringE)
-}
-
-// GetBoolE returns the bool value for the key, or error if missing/invalid.
-func GetBoolE(key string) (bool, error) { return Default().GetBoolE(key) }
-
 // GetBoolE returns the bool value for the key, or error if missing/invalid.
 func (c *Config) GetBoolE(key string) (bool, error) {
 	return getValueE(c, key, cast.ToBoolE)
-}
-
-// GetBoolMust returns the bool value for the key. Panics if missing/invalid.
-func GetBoolMust(key string) bool { return Default().GetBoolMust(key) }
-
-// GetBoolMust returns the bool value for the key. Panics if missing/invalid.
-func (c *Config) GetBoolMust(key string) bool {
-	return getValueMust(c, key, cast.ToBoolE)
-}
-
-// GetBool returns the bool value for the key. Returns default if
-// missing/invalid.
-func GetBool(key string) bool { return Default().GetBool(key) }
-
-// GetBool returns the bool value for the key. Returns default if
-// missing/invalid.
-func (c *Config) GetBool(key string) bool {
-	return getValue(c, key, cast.ToBoolE)
 }
 
 // Generic helper for type-safe get with casting
@@ -663,31 +480,4 @@ func getValueE[T any](c *Config, key string, conv func(any) (T, error)) (T, erro
 		return zero, err
 	}
 	return t, nil
-}
-
-// Generic helper for type-safe get with casting
-func getValue[T any](c *Config, key string, conv func(any) (T, error)) T {
-	var zero T
-	v, err := c.GetE(key)
-	if err != nil {
-		return zero
-	}
-	t, err := conv(v)
-	if err != nil {
-		return zero
-	}
-	return t
-}
-
-// Generic helper for type-safe get with casting
-func getValueMust[T any](c *Config, key string, conv func(any) (T, error)) T {
-	v, err := c.GetE(key)
-	if err != nil {
-		panic(err)
-	}
-	t, err := conv(v)
-	if err != nil {
-		panic(err)
-	}
-	return t
 }
