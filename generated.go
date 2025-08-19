@@ -1,7 +1,11 @@
 // This file is auto generated; DO NOT EDIT IT.
 package config
 
-import "reflect"
+import (
+	"reflect"
+
+	"github.com/spf13/pflag"
+)
 
 // Bind maps the configuration values from the Config instance into a structured
 // Go type. It uses struct tags to determine how to bind the data and can also
@@ -27,6 +31,12 @@ import "reflect"
 //   - error: If the input is not a non-nil pointer to a struct, or if binding
 //     fails.
 func Bind(v any) error { return Default().Bind(v) }
+
+// SetPflagSet adds *pflag.FlagSet
+func SetPflagSet(fs *pflag.FlagSet) { Default().SetPflagSet(fs) }
+
+// AddPflag adds *pflag.FlagSet
+func AddPflag(name string, f *pflag.Flag) { Default().AddPflag(name, f) }
 
 // SetEnvPrefix sets the environment variable prefix for the configuration.
 // All underscores in the provided string are removed before assignment.
@@ -105,8 +115,7 @@ func Get(key string) any { return Default().Get(key) }
 
 // Get returns the  value for the key. Returns default if missing/invalid.
 func (c *Config) Get(key string) any {
-	v, _ := c.GetE(key)
-	return v
+	return Should(c.GetE(key))
 }
 
 // GetValueE returns the value value for the key, or error if missing/invalid.
@@ -125,8 +134,7 @@ func GetValue(key string) reflect.Value { return Default().GetValue(key) }
 
 // GetValue returns the value value for the key. Returns default if missing/invalid.
 func (c *Config) GetValue(key string) reflect.Value {
-	v, _ := c.GetValueE(key)
-	return v
+	return Should(c.GetValueE(key))
 }
 
 // GetIntE returns the int value for the key, or error if missing/invalid.
@@ -145,8 +153,7 @@ func GetInt(key string) int { return Default().GetInt(key) }
 
 // GetInt returns the int value for the key. Returns default if missing/invalid.
 func (c *Config) GetInt(key string) int {
-	v, _ := c.GetIntE(key)
-	return v
+	return Should(c.GetIntE(key))
 }
 
 // GetInt64E returns the int64 value for the key, or error if missing/invalid.
@@ -165,8 +172,7 @@ func GetInt64(key string) int64 { return Default().GetInt64(key) }
 
 // GetInt64 returns the int64 value for the key. Returns default if missing/invalid.
 func (c *Config) GetInt64(key string) int64 {
-	v, _ := c.GetInt64E(key)
-	return v
+	return Should(c.GetInt64E(key))
 }
 
 // GetUintE returns the uint value for the key, or error if missing/invalid.
@@ -185,8 +191,7 @@ func GetUint(key string) uint { return Default().GetUint(key) }
 
 // GetUint returns the uint value for the key. Returns default if missing/invalid.
 func (c *Config) GetUint(key string) uint {
-	v, _ := c.GetUintE(key)
-	return v
+	return Should(c.GetUintE(key))
 }
 
 // GetUint64E returns the uint64 value for the key, or error if missing/invalid.
@@ -205,8 +210,7 @@ func GetUint64(key string) uint64 { return Default().GetUint64(key) }
 
 // GetUint64 returns the uint64 value for the key. Returns default if missing/invalid.
 func (c *Config) GetUint64(key string) uint64 {
-	v, _ := c.GetUint64E(key)
-	return v
+	return Should(c.GetUint64E(key))
 }
 
 // GetStringE returns the string value for the key, or error if missing/invalid.
@@ -225,8 +229,7 @@ func GetString(key string) string { return Default().GetString(key) }
 
 // GetString returns the string value for the key. Returns default if missing/invalid.
 func (c *Config) GetString(key string) string {
-	v, _ := c.GetStringE(key)
-	return v
+	return Should(c.GetStringE(key))
 }
 
 // GetBoolE returns the bool value for the key, or error if missing/invalid.
@@ -245,8 +248,7 @@ func GetBool(key string) bool { return Default().GetBool(key) }
 
 // GetBool returns the bool value for the key. Returns default if missing/invalid.
 func (c *Config) GetBool(key string) bool {
-	v, _ := c.GetBoolE(key)
-	return v
+	return Should(c.GetBoolE(key))
 }
 
 // GetStringMapE returns the stringmap value for the key, or error if missing/invalid.
@@ -265,8 +267,7 @@ func GetStringMap(key string) map[string]any { return Default().GetStringMap(key
 
 // GetStringMap returns the stringmap value for the key. Returns default if missing/invalid.
 func (c *Config) GetStringMap(key string) map[string]any {
-	v, _ := c.GetStringMapE(key)
-	return v
+	return Should(c.GetStringMapE(key))
 }
 
 // GetStringMapIntE returns the stringmapint value for the key, or error if missing/invalid.
@@ -285,8 +286,7 @@ func GetStringMapInt(key string) map[string]int { return Default().GetStringMapI
 
 // GetStringMapInt returns the stringmapint value for the key. Returns default if missing/invalid.
 func (c *Config) GetStringMapInt(key string) map[string]int {
-	v, _ := c.GetStringMapIntE(key)
-	return v
+	return Should(c.GetStringMapIntE(key))
 }
 
 // GetStringMapInt64E returns the stringmapint64 value for the key, or error if missing/invalid.
@@ -307,8 +307,7 @@ func GetStringMapInt64(key string) map[string]int64 { return Default().GetString
 
 // GetStringMapInt64 returns the stringmapint64 value for the key. Returns default if missing/invalid.
 func (c *Config) GetStringMapInt64(key string) map[string]int64 {
-	v, _ := c.GetStringMapInt64E(key)
-	return v
+	return Should(c.GetStringMapInt64E(key))
 }
 
 // GetStringMapUintE returns the stringmapuint value for the key, or error if missing/invalid.
@@ -327,8 +326,7 @@ func GetStringMapUint(key string) map[string]uint { return Default().GetStringMa
 
 // GetStringMapUint returns the stringmapuint value for the key. Returns default if missing/invalid.
 func (c *Config) GetStringMapUint(key string) map[string]uint {
-	v, _ := c.GetStringMapUintE(key)
-	return v
+	return Should(c.GetStringMapUintE(key))
 }
 
 // GetStringMapUint64E returns the stringmapuint64 value for the key, or error if missing/invalid.
@@ -351,8 +349,7 @@ func GetStringMapUint64(key string) map[string]uint64 { return Default().GetStri
 
 // GetStringMapUint64 returns the stringmapuint64 value for the key. Returns default if missing/invalid.
 func (c *Config) GetStringMapUint64(key string) map[string]uint64 {
-	v, _ := c.GetStringMapUint64E(key)
-	return v
+	return Should(c.GetStringMapUint64E(key))
 }
 
 // GetStringMapStringE returns the stringmapstring value for the key, or error if missing/invalid.
@@ -375,8 +372,7 @@ func GetStringMapString(key string) map[string]string { return Default().GetStri
 
 // GetStringMapString returns the stringmapstring value for the key. Returns default if missing/invalid.
 func (c *Config) GetStringMapString(key string) map[string]string {
-	v, _ := c.GetStringMapStringE(key)
-	return v
+	return Should(c.GetStringMapStringE(key))
 }
 
 // GetStringMapBoolE returns the stringmapbool value for the key, or error if missing/invalid.
@@ -395,8 +391,7 @@ func GetStringMapBool(key string) map[string]bool { return Default().GetStringMa
 
 // GetStringMapBool returns the stringmapbool value for the key. Returns default if missing/invalid.
 func (c *Config) GetStringMapBool(key string) map[string]bool {
-	v, _ := c.GetStringMapBoolE(key)
-	return v
+	return Should(c.GetStringMapBoolE(key))
 }
 
 // GetStringMapStringSliceE returns the stringmapstringslice value for the key, or error if missing/invalid.
@@ -421,6 +416,5 @@ func GetStringMapStringSlice(key string) map[string][]string {
 
 // GetStringMapStringSlice returns the stringmapstringslice value for the key. Returns default if missing/invalid.
 func (c *Config) GetStringMapStringSlice(key string) map[string][]string {
-	v, _ := c.GetStringMapStringSliceE(key)
-	return v
+	return Should(c.GetStringMapStringSliceE(key))
 }

@@ -26,6 +26,11 @@ func Must[T any](v T, err error) T {
 	return v
 }
 
+// Should indicates that there should not be any error; it ignores the error.
+func Should[T any](v T, _ error) T {
+	return v
+}
+
 // DecodeFunc decodes raw bytes into a generic map representation of a config
 // file.
 type DecodeFunc func([]byte) (map[string]any, error)

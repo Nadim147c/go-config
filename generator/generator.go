@@ -35,9 +35,12 @@ func main() {
 	fmt.Fprintln(outFile, `// This file is auto generated; DO NOT EDIT IT.`)
 	fmt.Fprintln(outFile, "package config")
 	fmt.Fprintln(outFile)
-	fmt.Fprintln(outFile, `
-import "reflect"
-    `)
+	fmt.Fprint(outFile, `
+import (
+	"reflect"
+	"github.com/spf13/pflag"
+)
+`)
 
 	fset := token.NewFileSet()
 	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -160,7 +163,6 @@ func generateFunctions(f *os.File, typeName, retType string) {
 
 	fmt.Fprintf(f, "// Get%s returns the %s value for the key. Returns default if missing/invalid.\n", typeName, lower)
 	fmt.Fprintf(f, "func (c *Config) Get%s(key string) %s {\n", typeName, retType)
-	fmt.Fprintf(f, "\tv, _ := c.Get%sE(key)\n", typeName)
-	fmt.Fprintf(f, "\treturn v\n")
+	fmt.Fprintf(f, "\treturn Should(c.Get%sE(key))\n", typeName)
 	fmt.Fprintf(f, "}\n\n")
 }

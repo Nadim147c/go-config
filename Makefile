@@ -8,7 +8,7 @@ test-lint:
 	$(GO) mod tidy
 	$(GO) mod tidy -modfile ./tool.go.mod
 	$(TOOL) gofumpt -l -w .
-	$(TOOL) revive -config ./revive.toml $(EXCLUDE_TEST)
+	$(TOOL) revive -config ./revive.toml -exclude ./generated.go
 
 gen:
 	$(GO) run ./generator .
