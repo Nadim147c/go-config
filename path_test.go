@@ -26,7 +26,7 @@ func TestFindPath(t *testing.T) {
 		{"xdg cache home", "/base", "$XDG_CACHE_HOME/cache", "/home/<username>/.cache/cache", false},
 		{"xdg data home", "/base", "$XDG_DATA_HOME/data", "/home/<username>/.local/share/data", false},
 		{"tmpdir", "/base", "$TMPDIR/temp.txt", os.TempDir() + "/temp.txt", false},
-		{"pwd", "/base", "$PWD/file.txt", must(os.Getwd()) + "/file.txt", false},
+		{"pwd", "/base", "$PWD/file.txt", config.Must(os.Getwd()) + "/file.txt", false},
 		{"xdg desktop dir", "/base", "$XDG_DESKTOP_DIR/icon.png", "/home/<username>/Desktop/icon.png", false},
 		{"xdg documents dir", "/base", "$XDG_DOCUMENTS_DIR/doc.txt", "/home/<username>/Documents/doc.txt", false},
 		{"xdg downloads dir", "/base", "$XDG_DOWNLOAD_DIR/file.bin", "/home/<username>/Downloads/file.bin", false},
