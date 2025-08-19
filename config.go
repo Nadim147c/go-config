@@ -14,6 +14,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/goccy/go-yaml"
 	"github.com/spf13/cast"
+	"github.com/spf13/pflag"
 )
 
 // Must indicates that there Must not be any error; it panics if an error
@@ -77,6 +78,9 @@ type Config struct {
 	defaults map[string]any
 	config   map[string]any
 
+	pflagSet *pflag.FlagSet
+	pflags   map[string]*pflag.Flag
+
 	envPrefix string
 	logger    *slog.Logger
 
@@ -109,6 +113,22 @@ func New() *Config {
 			"toml": DecoderFromUnmarshal(toml.Unmarshal),
 		},
 	}
+}
+
+// SetPflagSet adds *pflag.FlagSet
+func (c *Config) SetPflagSet(fs *pflag.FlagSet) {
+	c.pflagSet = fs
+}
+
+// AddPflag adds *pflag.FlagSet
+func (c *Config) AddPflag(name string, f *pflag.Flag) {
+	if c.pflags == nil {
+		c.pflags = map[string]*pflag.Flag{}
+	}
+	if name == "" {
+		name = f.Name
+	}
+	c.pflags[name] = f
 }
 
 // SetEnvPrefix sets the environment variable prefix for the configuration.
@@ -379,6 +399,16 @@ func (c *Config) Settings() map[string]any {
 
 // GetE returns the value for the key, or error if missing/invalid.
 func (c *Config) GetE(key string) (any, error) {
+	if c.pflags != nil {
+		if flag, ok := c.pflags[key]; ok && flag.Changed {
+			return flag.Value.String(), nil
+		}
+	}
+
+	if c.pflagSet != nil && c.pflagSet.Parsed() && c.pflagSet.Changed(key) {
+		return c.pflagSet.GetString(key)
+	}
+
 	parsed, err := KeySplit(key)
 	if err != nil {
 		return nil, err

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Nadim147c/go-config"
+	"github.com/spf13/pflag"
 )
 
 // must indicates that there must not be any error; it panics if an error occurs.
@@ -87,6 +88,29 @@ func TestReadConfigWithIncludes(t *testing.T) {
 	env := c.GetStringMust("env")
 	if env != "prod" {
 		t.Fatalf("c.GetStringMust(\"env\") = %v, want = %v", env, "prod")
+	}
+
+	set := pflag.NewFlagSet("app", pflag.ContinueOnError)
+	set.String("mode", "", "set mode")
+	set.Parse([]string{})
+	set.Set("mode", "test")
+
+	c.SetPflagSet(set)
+	mode := c.GetStringMust("mode")
+
+	if mode != "test" {
+		t.Fatalf("c.GetStringMust(\"mode\") = %v, want = %v", mode, "test")
+	}
+
+	set2 := pflag.NewFlagSet("app2", pflag.ContinueOnError)
+	set2.String("mode", "", "set mode")
+	set2.Parse([]string{})
+	set2.Set("mode", "test2")
+	c.AddPflag("", set2.Lookup("mode"))
+
+	mode2 := c.GetStringMust("mode")
+	if mode2 != "test2" {
+		t.Fatalf("c.GetStringMust(\"mode\") = %v, want = %v", mode2, "test2")
 	}
 }
 

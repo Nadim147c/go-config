@@ -8,6 +8,7 @@ require (
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/uuid v1.6.0
 	github.com/spf13/cast v1.9.2
+	github.com/spf13/pflag v1.0.7
 )
 
 require golang.org/x/sys v0.26.0 // indirect
