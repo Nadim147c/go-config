@@ -116,7 +116,7 @@ func New() *Config {
 //
 // For example, calling SetEnvPrefix("APP_") will set the prefix to "APP".
 func (c *Config) SetEnvPrefix(p string) {
-	c.envPrefix = strings.ReplaceAll(p, "_", "")
+	c.envPrefix = strings.TrimSuffix(p, "_")
 }
 
 // basenameWithoutExt return filename without extension
@@ -332,14 +332,14 @@ func (c *Config) setValue(in *map[string]any, key string, v any) error {
 		*in = vm
 	}
 
-	nested, err := KeySplit(key)
+	parsed, err := KeySplit(key)
 	if err != nil {
 		return err
 	}
 
 	m := *in
-	for i := 0; i < len(nested)-1; i++ {
-		part := nested[i]
+	for i := range parsed.LastIndex() {
+		part := parsed.Parts[i].String()
 		if next, ok := m[part]; ok {
 			if subMap, ok := next.(map[string]any); ok {
 				m = subMap
@@ -355,7 +355,8 @@ func (c *Config) setValue(in *map[string]any, key string, v any) error {
 			m = newMap
 		}
 	}
-	m[nested[len(nested)-1]] = v
+
+	m[parsed.Parts[parsed.LastIndex()].String()] = v
 	return nil
 }
 
@@ -378,10 +379,21 @@ func (c *Config) Settings() map[string]any {
 
 // GetE returns the value for the key, or error if missing/invalid.
 func (c *Config) GetE(key string) (any, error) {
-	v, err := c.getValue(c.config, key)
+	parsed, err := KeySplit(key)
+	if err != nil {
+		return nil, err
+	}
+
+	env := parsed.EnvKey(c.envPrefix)
+	if v, ok := os.LookupEnv(env); ok {
+		return v, nil
+	}
+	c.logger.Debug("Couldn't find value in env", "env_name", env, "error", err)
+
+	v, err := c.getValue(c.config, parsed)
 	if err != nil {
 		c.logger.Debug("Failed to find value", "key", key, "error", err)
-		v, err := c.getValue(c.defaults, key)
+		v, err := c.getValue(c.defaults, parsed)
 		if err == nil {
 			return v, nil
 		}
@@ -391,19 +403,15 @@ func (c *Config) GetE(key string) (any, error) {
 }
 
 // GetE returns the value for the key, or an error if missing/invalid.
-func (c *Config) getValue(m map[string]any, key string) (any, error) {
-	if key == "." {
+func (c *Config) getValue(m map[string]any, key Key) (any, error) {
+	if key.Raw == "." {
 		return m, nil
-	}
-	nested, err := KeySplit(key)
-	if err != nil {
-		return nil, err
 	}
 
 	var prefix strings.Builder
 
-	for i := 0; i < len(nested)-1; i++ {
-		part := nested[i]
+	for i := range key.LastIndex() {
+		part := key.Parts[i].String()
 		prefix.WriteString(part)
 
 		next, ok := m[part]
@@ -421,7 +429,7 @@ func (c *Config) getValue(m map[string]any, key string) (any, error) {
 		prefix.WriteByte('.')
 	}
 
-	val, ok := m[nested[len(nested)-1]]
+	val, ok := m[key.Parts[key.LastIndex()].String()]
 	if !ok {
 		return nil, fmt.Errorf("key not found: %s", key)
 	}

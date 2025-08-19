@@ -64,6 +64,11 @@ import "reflect"
 				continue
 			}
 
+			mi := exprToString(fn.Recv.List[0].Type)
+			if mi != "Config" && mi != "*Config" {
+				continue
+			}
+
 			if !ast.IsExported(fn.Name.Name) {
 				continue
 			}

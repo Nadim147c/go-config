@@ -3,6 +3,7 @@ package config_test
 import (
 	"encoding/json"
 	"log/slog"
+	"os"
 	"reflect"
 	"testing"
 
@@ -75,6 +76,17 @@ func TestReadConfigWithIncludes(t *testing.T) {
 	debug := c.GetBoolMust("app.debug")
 	if !debug {
 		t.Fatalf("c.GetBool(\"app.debug\") = %v, want = %v", debug, true)
+	}
+
+	c.SetEnvPrefix("CONFIG")
+	err := os.Setenv("CONFIG_ENV", "prod")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	env := c.GetStringMust("env")
+	if env != "prod" {
+		t.Fatalf("c.GetStringMust(\"env\") = %v, want = %v", env, "prod")
 	}
 }
 
