@@ -6,6 +6,7 @@ import (
 	"net/mail"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -21,6 +22,8 @@ import (
 //     `changed` flag).
 //   - default: If the field is zero-valued, sets it to the specified default
 //     value (supports string, int, uint, float, bool).
+//   - enum: Ensures the field is a one of the given comma (,) sperated enum.
+//     Note: enum must be inside a qoute. enum='a,b,c'
 //   - base64: Ensures the field is a valid base64-encoded string (length,
 //     character set, padding).
 //   - email: Ensures the field is a valid email address without a display name.
@@ -87,6 +90,40 @@ func Validate(sf reflect.StructField, sfv reflect.Value, changed bool) error {
 				default:
 					panic(fmt.Sprintf("%s does not support default value assignment", value.Kind()))
 				}
+			}
+		case "enum":
+			value := resolvePointer(sfv)
+			choices := strings.Split(Must(cast.ToStringE(rule)), ",")
+			switch value.Kind() {
+			case reflect.String:
+				str := value.String()
+				if !slices.Contains(choices, str) {
+					return fmt.Errorf("invalid enum value %q, must be one of %v", str, choices)
+				}
+
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				val := value.Int()
+				choices := Must(cast.ToInt64SliceE(choices))
+				if !slices.Contains(choices, val) {
+					return fmt.Errorf("invalid enum value %d, must be one of %v", val, choices)
+				}
+
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				val := value.Uint()
+				choices := Must(cast.ToUint64SliceE(choices))
+				if !slices.Contains(choices, val) {
+					return fmt.Errorf("invalid enum value %d, must be one of %v", val, choices)
+				}
+
+			case reflect.Float32, reflect.Float64:
+				val := value.Float()
+				choices := Must(cast.ToFloat64SliceE(choices))
+				if !slices.Contains(choices, val) {
+					return fmt.Errorf("invalid enum value %f, must be one of %v", val, choices)
+				}
+
+			default:
+				panic(fmt.Sprintf("%s does not support enum validation", value.Kind()))
 			}
 		case "base64":
 			value := resolvePointer(sfv)
