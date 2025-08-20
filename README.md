@@ -1,5 +1,8 @@
 # Go Config Library
 
+> [!CAUTION]
+> This is highly experimental 🧪 and expect breaking changes
+
 [![Go Reference](https://pkg.go.dev/badge/github.com/Nadim147c/go-config.svg)](https://pkg.go.dev/github.com/Nadim147c/go-config)
 
 A comprehensive, feature-rich configuration management library for Go applications that supports
