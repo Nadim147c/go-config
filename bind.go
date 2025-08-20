@@ -267,7 +267,15 @@ func (c *Config) bindPrimitive(rv reflect.Value, key string) (bool, error) {
 	}
 
 	if rv.CanSet() {
-		rv.Set(reflect.ValueOf(converted))
+		cv := reflect.ValueOf(converted)
+
+		if cv.Type().AssignableTo(rv.Type()) {
+			rv.Set(cv)
+		} else if cv.Type().ConvertibleTo(rv.Type()) {
+			rv.Set(cv.Convert(rv.Type()))
+		} else {
+			return false, fmt.Errorf("%s: %v is not assignable to %v", key, got.Type(), rv.Type())
+		}
 	}
 
 	return true, nil // Changed because we set the value
