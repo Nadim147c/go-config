@@ -7,30 +7,17 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Bind maps the configuration values from the Config instance into a structured
+// Bind maps configuration values from the Config instance into a structured
 // Go type. It uses struct tags to determine how to bind the data and can also
 // perform validation.
 //
-// Example:
-//
-//	type MyConfig struct {
-//	    Port int    `config:"port" validate:"min=1000,max=9999"`
-//	    Key  string `config:"key"`
-//	}
-//
-//	var cfg MyConfig
-//	c := config.New()
-//	c.ReadConfig()
-//	c.Bind(&cfg)
-//
 // Parameters:
-//   - v: A pointer to a struct where the configuration values will be
-//     populated.
+//   - prefix: The prefix to prepend to all configuration keys
+//   - v: A pointer to a struct where the configuration values will be populated
 //
 // Returns:
-//   - error: If the input is not a non-nil pointer to a struct, or if binding
-//     fails.
-func Bind(v any) error { return Default().Bind(v) }
+//   - error: If the input is not a non-nil pointer, or if binding fails
+func Bind(prefix string, v any) error { return Default().Bind(prefix, v) }
 
 // SetPflagSet adds *pflag.FlagSet
 func SetPflagSet(fs *pflag.FlagSet) { Default().SetPflagSet(fs) }
@@ -99,6 +86,9 @@ func Keys() []string { return Default().Keys() }
 // Settings returns the settings map
 func Settings() map[string]any { return Default().Settings() }
 
+// Changed checks if a value is changed.
+func Changed(key string) bool { return Default().Changed(key) }
+
 // GetE returns the  value for the key, or error if missing/invalid.
 func GetE(key string) (any, error) { return Default().GetE(key) }
 
@@ -118,23 +108,23 @@ func (c *Config) Get(key string) any {
 	return Should(c.GetE(key))
 }
 
-// GetValueE returns the value value for the key, or error if missing/invalid.
-func GetValueE(key string) (reflect.Value, error) { return Default().GetValueE(key) }
+// GetReflectionE returns the reflection value for the key, or error if missing/invalid.
+func GetReflectionE(key string) (reflect.Value, error) { return Default().GetReflectionE(key) }
 
-// GetValueMust returns the value value for the key. Panics if missing/invalid.
-func GetValueMust(key string) reflect.Value { return Default().GetValueMust(key) }
+// GetReflectionMust returns the reflection value for the key. Panics if missing/invalid.
+func GetReflectionMust(key string) reflect.Value { return Default().GetReflectionMust(key) }
 
-// GetValueMust returns the value value for the key. Panics if missing/invalid.
-func (c *Config) GetValueMust(key string) reflect.Value {
-	return Must(c.GetValueE(key))
+// GetReflectionMust returns the reflection value for the key. Panics if missing/invalid.
+func (c *Config) GetReflectionMust(key string) reflect.Value {
+	return Must(c.GetReflectionE(key))
 }
 
-// GetValue returns the value value for the key. Returns default if missing/invalid.
-func GetValue(key string) reflect.Value { return Default().GetValue(key) }
+// GetReflection returns the reflection value for the key. Returns default if missing/invalid.
+func GetReflection(key string) reflect.Value { return Default().GetReflection(key) }
 
-// GetValue returns the value value for the key. Returns default if missing/invalid.
-func (c *Config) GetValue(key string) reflect.Value {
-	return Should(c.GetValueE(key))
+// GetReflection returns the reflection value for the key. Returns default if missing/invalid.
+func (c *Config) GetReflection(key string) reflect.Value {
+	return Should(c.GetReflectionE(key))
 }
 
 // GetIntE returns the int value for the key, or error if missing/invalid.

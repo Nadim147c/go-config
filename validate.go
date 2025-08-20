@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/spf13/cast"
@@ -67,11 +68,15 @@ func Validate(sf reflect.StructField, sfv reflect.Value, changed bool) error {
 			}
 		case "default":
 			value := resolvePointer(sfv)
-			if isZeroValue(value) {
+			if !changed {
 				switch value.Kind() {
 				case reflect.String:
 					sfv.SetString(Must(cast.ToStringE(rule)))
 				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					if value.Type() == reflect.TypeOf(time.Duration(0)) {
+						sfv.SetInt(int64(Must(cast.ToDurationE(rule))))
+						continue
+					}
 					sfv.SetInt(Must(cast.ToInt64E(rule)))
 				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 					sfv.SetUint(Must(cast.ToUint64E(rule)))
@@ -330,4 +335,13 @@ func splitCSVRespectQuotes(s string) ([]string, error) {
 	}
 	parts = append(parts, b.String())
 	return parts, nil
+}
+
+func resolvePointer(sv reflect.Value) reflect.Value {
+	var i int
+	for sv.Kind() == reflect.Pointer && i < 50 {
+		sv = sv.Elem()
+		i++
+	}
+	return sv
 }

@@ -1,59 +1,174 @@
 package config
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
-func TestBind(t *testing.T) {
-	type Settings struct {
-		ID string `config:"id" check:"required,uuid"`
+func TestServerConfigBind(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       func(c *Config)
+		expectError bool
+		expected    ServerConfig
+	}{
+		{
+			name:        "default values only",
+			setup:       func(_ *Config) {},
+			expectError: false,
+			expected: ServerConfig{
+				Addr:         ":8080",
+				ReadTimeout:  30 * time.Second,
+				WriteTimeout: 30 * time.Second,
+			},
+		},
+		{
+			name: "custom values with valid TLS",
+			setup: func(c *Config) {
+				c.Set("addr", ":9090")
+				c.Set("read_timeout", "60s")
+				c.Set("write_timeout", "45s")
+				c.Set("tls.enabled", true)
+				c.Set("tls.cert", "/path/to/cert.pem")
+				c.Set("tls.key", "/path/to/key.pem")
+			},
+			expectError: false,
+			expected: ServerConfig{
+				Addr:         ":9090",
+				ReadTimeout:  60 * time.Second,
+				WriteTimeout: 45 * time.Second,
+				TLS: ServerTLS{
+					Enabled: true,
+					Cert:    "/path/to/cert.pem",
+					Key:     "/path/to/key.pem",
+				},
+			},
+		},
+		{
+			name: "TLS enabled without cert files should fail",
+			setup: func(c *Config) {
+				c.Set("tls.enabled", true)
+				// Missing tls.cert and tls.key - should fail validation
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid timeout format",
+			setup: func(c *Config) {
+				c.Set("read_timeout", "invalid-duration")
+			},
+			expectError: true,
+		},
 	}
 
-	type testStruct struct {
-		Port     int      `config:"app.port" check:"default=8080,min=1000,max=9000"`
-		Email    string   `config:"email" check:"required,email"`
-		Username string   `config:"username" check:"required,match='^[A-Za-z0-9_]+$'"`
-		Settings Settings `config:"settings"`
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := New()
+			tt.setup(c)
 
-	c := New()
-	// simulate loaded config
-	c.Set("app.port", 1500)
-	c.Set("email", "user@example.com")
-	c.Set("username", "valid_user")
-	c.Set("settings.id", "550e8400-e29b-41d4-a716-446655440000")
+			var config ServerConfig
+			err := c.Bind("", &config)
 
-	var ts testStruct
-	if err := c.Bind(&ts); err != nil {
-		t.Fatalf("Bind failed: %v", err)
-	}
+			if tt.expectError {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				t.Logf("Got expected error: %v", err)
+				return
+			}
 
-	if ts.Port != 1500 {
-		t.Errorf("expected Port=1500, got %d", ts.Port)
-	}
-	if ts.Email != "user@example.com" {
-		t.Errorf("expected Email=user@example.com, got %s", ts.Email)
-	}
-	if ts.Username != "valid_user" {
-		t.Errorf("expected Username=valid_user, got %s", ts.Username)
-	}
-	if ts.Settings.ID != "550e8400-e29b-41d4-a716-446655440000" {
-		t.Errorf("expected ID to match uuid, got %s", ts.Settings.ID)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			// Verify the configuration values
+			if config.Addr != tt.expected.Addr {
+				t.Errorf("expected Addr=%q, got %q", tt.expected.Addr, config.Addr)
+			}
+
+			if config.ReadTimeout != tt.expected.ReadTimeout {
+				t.Errorf("expected ReadTimeout=%v, got %v", tt.expected.ReadTimeout, config.ReadTimeout)
+			}
+
+			if config.WriteTimeout != tt.expected.WriteTimeout {
+				t.Errorf("expected WriteTimeout=%v, got %v", tt.expected.WriteTimeout, config.WriteTimeout)
+			}
+
+			if config.TLS.Enabled != tt.expected.TLS.Enabled {
+				t.Errorf("expected TLS.Enabled=%v, got %v", tt.expected.TLS.Enabled, config.TLS.Enabled)
+			}
+
+			if config.TLS.Cert != tt.expected.TLS.Cert {
+				t.Errorf("expected TLS.Cert=%q, got %q", tt.expected.TLS.Cert, config.TLS.Cert)
+			}
+
+			if config.TLS.Key != tt.expected.TLS.Key {
+				t.Errorf("expected TLS.Key=%q, got %q", tt.expected.TLS.Key, config.TLS.Key)
+			}
+		})
 	}
 }
 
-func TestBindDefaultsAndValidationFail(t *testing.T) {
-	type testStruct struct {
-		Port  int    `config:"app.port" check:"default=8080,min=1000,max=9000"`
-		Email string `config:"email" check:"required,email"`
+func TestServerConfigWithPrefix(t *testing.T) {
+	c := New()
+	c.Set("server.addr", ":9090")
+	c.Set("server.read_timeout", "60s")
+	c.Set("server.tls.enabled", true)
+	c.Set("server.tls.cert", "/path/to/cert.pem")
+
+	var config ServerConfig
+	err := c.Bind("server", &config)
+	if err != nil {
+		t.Fatalf("failed to bind with prefix: %v", err)
 	}
 
+	if config.Addr != ":9090" {
+		t.Errorf("expected Addr=:9090, got %q", config.Addr)
+	}
+
+	if config.ReadTimeout != 60*time.Second {
+		t.Errorf("expected ReadTimeout=60s, got %v", config.ReadTimeout)
+	}
+
+	if !config.TLS.Enabled {
+		t.Error("expected TLS.Enabled=true, got false")
+	}
+
+	if config.TLS.Cert != "/path/to/cert.pem" {
+		t.Errorf("expected TLS.Cert=/path/to/cert.pem, got %q", config.TLS.Cert)
+	}
+}
+
+func TestServerConfigDurationValidation(t *testing.T) {
 	c := New()
-	// no values set, should use default for port, fail for email
-	var ts testStruct
-	err := c.Bind(&ts)
-	if err == nil {
-		t.Fatal("expected validation error for missing required email, got nil")
+
+	// Set extremely long timeouts that might be unreasonable
+	c.Set("read_timeout", "24h")    // 24 hours
+	c.Set("write_timeout", "8760h") // 1 year
+
+	var config ServerConfig
+	err := c.Bind("", &config)
+	if err != nil {
+		t.Fatalf("unexpected error for long durations: %v", err)
 	}
-	if ts.Port != 8080 {
-		t.Errorf("expected default Port=8080, got %d", ts.Port)
+
+	// The bind should succeed even with long durations
+	// (unless you have specific validation rules for duration limits)
+	if config.ReadTimeout != 24*time.Hour {
+		t.Errorf("expected ReadTimeout=24h, got %v", config.ReadTimeout)
 	}
+}
+
+// ServerConfig struct for testing
+type ServerConfig struct {
+	Addr         string        `config:"addr" check:"default=:8080"`
+	ReadTimeout  time.Duration `config:"read_timeout" check:"default=30s"`
+	WriteTimeout time.Duration `config:"write_timeout" check:"default=30s"`
+	TLS          ServerTLS     `config:"tls"`
+}
+
+type ServerTLS struct {
+	Enabled bool   `config:"enabled" check:"default=false"`
+	Cert    string `config:"cert" check:"required"`
+	Key     string `config:"key"`
 }

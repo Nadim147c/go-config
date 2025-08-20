@@ -17,6 +17,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// KeyError indicates value for key doesn't exists
+type KeyError struct {
+	Key string
+}
+
+func (ke KeyError) Error() string {
+	return fmt.Sprintf("key not found: %v", ke.Key)
+}
+
 // Must indicates that there Must not be any error; it panics if an error
 // occurs.
 func Must[T any](v T, err error) T {
@@ -402,6 +411,12 @@ func (c *Config) Settings() map[string]any {
 	return c.config
 }
 
+// Changed checks if a value is changed.
+func (c *Config) Changed(key string) bool {
+	_, err := c.GetE(key)
+	return err == nil
+}
+
 // GetE returns the value for the key, or error if missing/invalid.
 func (c *Config) GetE(key string) (any, error) {
 	if c.pflags != nil {
@@ -451,7 +466,7 @@ func (c *Config) getValue(m map[string]any, key Key) (any, error) {
 
 		next, ok := m[part]
 		if !ok {
-			return nil, fmt.Errorf("key not found: %s", prefix.String())
+			return nil, KeyError{prefix.String()}
 		}
 
 		subMap, ok := next.(map[string]any)
@@ -466,14 +481,14 @@ func (c *Config) getValue(m map[string]any, key Key) (any, error) {
 
 	val, ok := m[key.Parts[key.LastIndex()].String()]
 	if !ok {
-		return nil, fmt.Errorf("key not found: %s", key)
+		return nil, KeyError{prefix.String()}
 	}
 
 	return val, nil
 }
 
-// GetValueE returns the reflect.Value for the key, or error if missing/invalid.
-func (c *Config) GetValueE(key string) (reflect.Value, error) {
+// GetReflectionE returns the reflect.Value for the key, or error if missing/invalid.
+func (c *Config) GetReflectionE(key string) (reflect.Value, error) {
 	v, err := c.GetE(key)
 	if err != nil {
 		return reflect.Value{}, err
