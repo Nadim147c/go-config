@@ -115,6 +115,7 @@ func New() *Config {
 		defaults: map[string]any{},
 		config:   map[string]any{},
 		fullPath: map[string]bool{},
+		fileName: "config",
 		encoders: map[string]EncodeFunc{
 			"json": EncoderFromMarshal(json.Marshal),
 			"yaml": EncoderFromMarshal(yaml.Marshal),
@@ -127,6 +128,7 @@ func New() *Config {
 			"yml":  DecoderFromUnmarshal(yaml.Unmarshal),
 			"toml": DecoderFromUnmarshal(toml.Unmarshal),
 		},
+		defaultFormat: "yaml",
 	}
 }
 
@@ -207,7 +209,7 @@ func (c *Config) GetConfigFiles() []string {
 		for entry := range slices.Values(dir) {
 			name := entry.Name()
 			if entry.IsDir() {
-				c.GetLogger().Debug("Skip directory", "path", path)
+				c.GetLogger().Debug("Skip directory", "path", path, "name", name)
 				continue
 			}
 			if basenameWithoutExt(name) == c.fileName {
