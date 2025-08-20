@@ -37,6 +37,7 @@ func main() {
 	fmt.Fprintln(outFile)
 	fmt.Fprint(outFile, `
 import (
+	"log/slog"
 	"reflect"
 	"github.com/spf13/pflag"
 )

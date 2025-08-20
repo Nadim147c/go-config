@@ -2,6 +2,7 @@
 package config
 
 import (
+	"log/slog"
 	"reflect"
 
 	"github.com/spf13/pflag"
