@@ -22,6 +22,12 @@ func Bind(prefix string, v any) error { return Default().Bind(prefix, v) }
 // SetPflagSet adds *pflag.FlagSet
 func SetPflagSet(fs *pflag.FlagSet) { Default().SetPflagSet(fs) }
 
+// SetLogger sets logger
+func SetLogger(l *slog.Logger) { Default().SetLogger(l) }
+
+// GetLogger returns the configured logger, or a no-op logger if none is set.
+func GetLogger() *slog.Logger { return Default().GetLogger() }
+
 // AddPflag adds *pflag.FlagSet
 func AddPflag(name string, f *pflag.Flag) { Default().AddPflag(name, f) }
 

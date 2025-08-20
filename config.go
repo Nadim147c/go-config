@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -134,6 +135,20 @@ func (c *Config) SetPflagSet(fs *pflag.FlagSet) {
 	c.pflagSet = fs
 }
 
+// SetLogger sets logger
+func (c *Config) SetLogger(l *slog.Logger) {
+	c.logger = l
+}
+
+// GetLogger returns the configured logger, or a no-op logger if none is set.
+func (c *Config) GetLogger() *slog.Logger {
+	if c.logger != nil {
+		return c.logger
+	}
+	// Return a dummy logger that discards all logs
+	return slog.New(slog.NewTextHandler(io.Discard, nil))
+}
+
 // AddPflag adds *pflag.FlagSet
 func (c *Config) AddPflag(name string, f *pflag.Flag) {
 	if c.pflags == nil {
@@ -186,13 +201,13 @@ func (c *Config) GetConfigFiles() []string {
 
 		dir, err := os.ReadDir(path)
 		if err != nil {
-			c.logger.Debug("Failed to read directory", "path", path, "error", err)
+			c.GetLogger().Debug("Failed to read directory", "path", path, "error", err)
 			continue
 		}
 		for entry := range slices.Values(dir) {
 			name := entry.Name()
 			if entry.IsDir() {
-				c.logger.Debug("Skip directory", "path", path)
+				c.GetLogger().Debug("Skip directory", "path", path)
 				continue
 			}
 			if basenameWithoutExt(name) == c.fileName {
@@ -250,9 +265,9 @@ func (c *Config) ReadConfig() error {
 		m, err := c.readConfigFile(path, visited)
 		if err != nil {
 			if os.IsNotExist(err) {
-				c.logger.Debug("Config path doesn't exist", "path", path)
+				c.GetLogger().Debug("Config path doesn't exist", "path", path)
 			} else {
-				c.logger.Warn("Failed to load config", "error", err)
+				c.GetLogger().Warn("Failed to load config", "error", err)
 			}
 			continue
 		}
@@ -286,7 +301,7 @@ func (c *Config) readConfigFile(path string, visited map[string]bool) (map[strin
 		case string:
 			included, err := c.resolveInclude(dir, v, visited)
 			if err != nil {
-				c.logger.Warn("Failed to load included config", "path", v, "error", err)
+				c.GetLogger().Warn("Failed to load included config", "path", v, "error", err)
 			} else {
 				DeepMerge(base, included)
 			}
@@ -295,7 +310,7 @@ func (c *Config) readConfigFile(path string, visited map[string]bool) (map[strin
 				if inc, ok := item.(string); ok {
 					included, err := c.resolveInclude(dir, inc, visited)
 					if err != nil {
-						c.logger.Warn("Failed to load included config", "path", inc, "error", err)
+						c.GetLogger().Warn("Failed to load included config", "path", inc, "error", err)
 					} else {
 						DeepMerge(base, included)
 					}
@@ -438,16 +453,16 @@ func (c *Config) GetE(key string) (any, error) {
 	if v, ok := os.LookupEnv(env); ok {
 		return v, nil
 	}
-	c.logger.Debug("Couldn't find value in env", "env_name", env, "error", err)
+	c.GetLogger().Debug("Couldn't find value in env", "env_name", env, "error", err)
 
 	v, err := c.getValue(c.config, parsed)
 	if err != nil {
-		c.logger.Debug("Failed to find value", "key", key, "error", err)
+		c.GetLogger().Debug("Failed to find value", "key", key, "error", err)
 		v, err := c.getValue(c.defaults, parsed)
 		if err == nil {
 			return v, nil
 		}
-		c.logger.Debug("Failed to find default value", "key", key, "error", err)
+		c.GetLogger().Debug("Failed to find default value", "key", key, "error", err)
 	}
 	return v, err
 }
