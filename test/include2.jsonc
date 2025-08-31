@@ -1,5 +1,6 @@
 {
   "logging": {
+    // this a comment
     "format": "json",
     "level": "debug"
   },

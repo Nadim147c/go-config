@@ -14,6 +14,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/goccy/go-yaml"
+	"github.com/hjson/hjson-go/v4"
 	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
 )
@@ -117,16 +118,20 @@ func New() *Config {
 		fullPath: map[string]bool{},
 		fileName: "config",
 		encoders: map[string]EncodeFunc{
-			"json": EncoderFromMarshal(json.Marshal),
-			"yaml": EncoderFromMarshal(yaml.Marshal),
-			"yml":  EncoderFromMarshal(yaml.Marshal),
-			"toml": EncoderFromMarshal(toml.Marshal),
+			"json":  EncoderFromMarshal(json.Marshal),
+			"hjson": EncoderFromMarshal(hjson.Marshal),
+			"jsonc": EncoderFromMarshal(hjson.Marshal),
+			"yaml":  EncoderFromMarshal(yaml.Marshal),
+			"yml":   EncoderFromMarshal(yaml.Marshal),
+			"toml":  EncoderFromMarshal(toml.Marshal),
 		},
 		decoders: map[string]DecodeFunc{
-			"json": DecoderFromUnmarshal(json.Unmarshal),
-			"yaml": DecoderFromUnmarshal(yaml.Unmarshal),
-			"yml":  DecoderFromUnmarshal(yaml.Unmarshal),
-			"toml": DecoderFromUnmarshal(toml.Unmarshal),
+			"json":  DecoderFromUnmarshal(json.Unmarshal),
+			"hjson": DecoderFromUnmarshal(hjson.Unmarshal),
+			"jsonc": DecoderFromUnmarshal(hjson.Unmarshal),
+			"yaml":  DecoderFromUnmarshal(yaml.Unmarshal),
+			"yml":   DecoderFromUnmarshal(yaml.Unmarshal),
+			"toml":  DecoderFromUnmarshal(toml.Unmarshal),
 		},
 		defaultFormat: "yaml",
 	}

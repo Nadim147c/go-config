@@ -1,5 +1,5 @@
 {
-  "include": ["included.yaml", "./include2.json"],
+  "include": ["included.yaml", "./include2.jsonc"],
   "app": {
     "name": "MyApp",
     "port": "8080"

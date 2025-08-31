@@ -14,6 +14,7 @@ require (
 	github.com/adrg/xdg v0.5.3
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/uuid v1.6.0
+	github.com/hjson/hjson-go/v4 v4.5.0
 	github.com/spf13/cast v1.9.2
 	github.com/spf13/pflag v1.0.7
 )
