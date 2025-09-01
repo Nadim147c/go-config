@@ -52,21 +52,19 @@ type AppConfig struct {
 }
 
 func main() {
-    cfg := config.New()
-
     // Add configuration paths
-    cfg.AddPath("/etc/myapp")
-    cfg.AddPath("$XDG_CONFIG_HOME/myapp")
-    cfg.AddPath("./config")
+    config.AddPath("/etc/myapp")
+    config.AddPath("$XDG_CONFIG_HOME/myapp")
+    config.AddPath("./config")
 
     // Load configuration
-    if err := cfg.ReadConfig(); err != nil {
+    if err := config.ReadConfig(); err != nil {
         panic(err)
     }
 
     // Bind to struct
     var appConfig AppConfig
-    if err := cfg.Bind("app", &appConfig); err != nil {
+    if err := config.Bind("app", &appConfig); err != nil {
         panic(err)
     }
 
@@ -95,7 +93,7 @@ cfg.AddPath("./config")
 err := cfg.ReadConfig()
 ```
 
-Supported file extensions: `.json`, `.yaml`, `.yml`, `.toml`, `.ini`
+Supported file extensions: `.json`, `.yaml`, `.yml`, `.toml`.
 
 ### Environment Variables
 
