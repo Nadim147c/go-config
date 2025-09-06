@@ -448,7 +448,7 @@ func (c *Config) GetE(key string) (any, error) {
 	}
 
 	if c.pflagSet != nil && c.pflagSet.Parsed() && c.pflagSet.Changed(key) {
-		return c.pflagSet.GetString(key)
+		return c.pflagSet.Lookup(key).Value.String(), nil
 	}
 
 	parsed, err := KeySplit(key)

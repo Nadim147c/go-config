@@ -144,8 +144,10 @@ func TestConfig(t *testing.T) {
 				c := config.New()
 				set := pflag.NewFlagSet("app", pflag.ContinueOnError)
 				set.String("mode", "", "set mode")
+				set.Bool("boolean", false, "set bool")
 				_ = set.Parse([]string{})
 				_ = set.Set("mode", "test")
+				_ = set.Set("boolean", "true")
 				c.SetPflagSet(set)
 				return c
 			},
@@ -153,6 +155,10 @@ func TestConfig(t *testing.T) {
 				mode := c.GetStringMust("mode")
 				if mode != "test" {
 					t.Fatalf("c.GetStringMust(\"mode\") = %v, want = %v", mode, "test")
+				}
+				b := c.GetBoolMust("boolean")
+				if !b {
+					t.Fatalf("c.GetBoolMust(\"bool\") = %v, want = %v", b, true)
 				}
 			},
 		},
