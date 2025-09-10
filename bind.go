@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"reflect"
@@ -40,6 +41,12 @@ func (c *Config) bindValue(rv reflect.Value, key string) error {
 			rv.Set(reflect.New(rv.Type().Elem()))
 		}
 		rv = rv.Elem()
+	}
+
+	if rv.CanInterface() {
+		if text, ok := rv.Interface().(encoding.TextUnmarshaler); ok {
+			return text.UnmarshalText([]byte(c.GetString(key)))
+		}
 	}
 
 	switch rv.Kind() {
